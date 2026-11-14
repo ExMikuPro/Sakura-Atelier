@@ -1,4 +1,4 @@
-const { runTests } = require('@vscode/test-electron');
+const { runTests, downloadAndUnzipVSCode } = require('@vscode/test-electron');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
@@ -25,9 +25,16 @@ const path = require('node:path');
         }
       }
     }
+    const version = process.env.SAKURA_VSCODE_VERSION || '1.85.2';
+    let executable = process.env.SAKURA_VSCODE_EXECUTABLE || await downloadAndUnzipVSCode(version);
+    if (process.platform === 'darwin' && !process.env.SAKURA_VSCODE_EXECUTABLE) {
+      // Newer official app bundles name their executable Code instead of Electron.
+      try { await fs.access(executable); }
+      catch { executable = path.join(path.dirname(executable), 'Code'); await fs.access(executable); }
+    }
     await runTests({
-      version: process.env.SAKURA_VSCODE_VERSION || '1.85.2',
-      ...(process.env.SAKURA_VSCODE_EXECUTABLE ? { vscodeExecutablePath: process.env.SAKURA_VSCODE_EXECUTABLE } : {}),
+      version,
+      vscodeExecutablePath: executable,
       extensionDevelopmentPath: developmentPaths,
       extensionTestsPath: path.resolve(__dirname, process.env.SAKURA_TEST_SUITE==='advanced'?'../out/test/suite/advanced.js':process.env.SAKURA_TEST_SUITE==='wizard'?'../out/test/suite/wizard.js':'../out/test/suite/index.js'),
       launchArgs: [...(process.env.SAKURA_TEST_CDP_PORT ? [`--remote-debugging-port=${process.env.SAKURA_TEST_CDP_PORT}`, '--remote-debugging-address=127.0.0.1'] : []), workspaceFile, '--user-data-dir', userData, '--extensions-dir', path.join(sandbox, 'extensions'), '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust', '--disable-updates'],

@@ -19,17 +19,22 @@ const yauzl = require('yauzl');
     });
   });
   let modules = 0;
+  const expectedModules = new Set();
   async function check(directory) {
     for (const item of await fs.readdir(directory, { withFileTypes: true })) {
       const file = path.posix.join(directory, item.name);
       if (item.isDirectory()) await check(file);
       else if (file.endsWith('.ts') && !file.endsWith('.d.ts')) {
         const runtime = 'extension/out/' + file.replace(/\.ts$/, '.js');
+        expectedModules.add(runtime);
         assert.ok(entries.has(runtime), `VSIX missing runtime module: ${runtime}`); modules++;
       }
     }
   }
   await check('src');
+  for (const file of entries) {
+    if (file.startsWith('extension/out/src/') && file.endsWith('.js')) assert.ok(expectedModules.has(file), `VSIX contains stale runtime module: ${file}`);
+  }
   for (const file of ['package.json', 'configuration.schema.json', 'media/manager.js', 'media/autosave.js', 'media/templatePicker.js', 'media/localization.js', 'package.nls.json']) {
     assert.ok(entries.has('extension/' + file), `VSIX missing resource: ${file}`);
   }

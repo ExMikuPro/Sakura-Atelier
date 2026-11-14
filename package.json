@@ -626,7 +626,7 @@
     ]
   },
   "scripts": {
-    "compile": "tsc -p . && node scripts/bundle.cjs",
+    "compile": "node scripts/clean-output.cjs && tsc -p . && node scripts/bundle.cjs",
     "lint": "eslint src test scripts",
     "test": "npm run compile && npm run lint && node --test out/test/*.test.js",
     "test:integration": "npm run compile && node scripts/integration.cjs",
