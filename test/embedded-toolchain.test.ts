@@ -115,3 +115,13 @@ test('cltComponents lists only what is installed', async () => {
   const host = fakeHost({ platform: 'linux', files: ['/clt/CMake/bin/cmake'] });
   assert.deepEqual(await cltComponents('/clt', host), { cmake: '/clt/CMake/bin/cmake' });
 });
+
+
+test('macOS GUI host finds verified Homebrew tools outside PATH and honors a custom prefix', async () => {
+  const host = fakeHost({ platform: 'darwin', env: { PATH: '/usr/bin', HOMEBREW_PREFIX: '/Volumes/Developer Tools/brew' }, files: ['/opt/homebrew/bin/cmake', '/usr/local/bin/ninja', '/Volumes/Developer Tools/brew/bin/arm-none-eabi-gcc'] });
+  const result = await discoverEmbeddedTools(host);
+  assert.equal(result.cmake.selected?.path, '/opt/homebrew/bin/cmake');
+  assert.equal(result.ninja.selected?.path, '/usr/local/bin/ninja');
+  assert.equal(result['arm-gcc'].selected?.path, '/Volumes/Developer Tools/brew/bin/arm-none-eabi-gcc');
+  assert.equal(result.platformio.selected, undefined);
+});
