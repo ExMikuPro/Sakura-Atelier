@@ -348,3 +348,69 @@ test("remote debug checks reject UI-host-only adapters and never choose a local 
     undefined,
   );
 });
+test("settled waits for the automatically scheduled first scan, not only the cache read", () =>
+  fixture(async (root) => {
+    const guard = new HostGuard(identifyHost(facts), () => true);
+    let release: () => void = () => {};
+    const waiting = new Promise<void>((r) => {
+      release = r;
+    });
+    let entered: () => void = () => {};
+    const started = new Promise<void>((r) => {
+      entered = r;
+    });
+    const registry = new ToolchainRegistry(root, guard, async () => {
+      entered();
+      await waiting;
+      return [sdk(process.execPath)];
+    });
+    await registry.start();
+    await started;
+    let complete = false;
+    const settled = registry.settled().then(() => {
+      complete = true;
+    });
+    await new Promise((r) => setTimeout(r, 5));
+    assert.equal(complete, false);
+    release();
+    await settled;
+    assert.equal(registry.snapshot().tools.length, 1);
+    registry.dispose();
+  }));
+
+test("automatic discovery excludes Store launchers and Apple compiler installation shims", () => {
+  const candidate = (executable: string) => ({
+    language: "python" as const,
+    executable,
+    source: "PATH",
+  });
+  assert.equal(
+    safeAutomaticCandidate(
+      candidate(
+        "C:\\Users\\me\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe",
+      ),
+      [],
+      "win32",
+    ),
+    false,
+  );
+  assert.equal(
+    safeAutomaticCandidate(
+      { ...candidate("/usr/bin/clang"), language: "c" },
+      [],
+      "darwin",
+    ),
+    false,
+  );
+  assert.equal(
+    safeAutomaticCandidate(
+      {
+        ...candidate("/Library/Developer/CommandLineTools/usr/bin/clang"),
+        language: "c",
+      },
+      [],
+      "darwin",
+    ),
+    true,
+  );
+});

@@ -153,6 +153,18 @@
         "command": "sakuraRunner.pythonTerminal",
         "title": "Sakura Atelier: Open Python Environment Terminal (Legacy Alias)",
         "icon": "$(terminal)"
+      },
+      {
+        "command": "sakuraAtelier.openToolchainRegistry",
+        "title": "%command.openToolchainRegistry%",
+        "category": "Sakura Atelier",
+        "icon": "$(json)"
+      },
+      {
+        "command": "sakuraAtelier.rescanToolchains",
+        "title": "%command.rescanToolchains%",
+        "category": "Sakura Atelier",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {

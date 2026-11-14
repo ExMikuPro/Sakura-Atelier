@@ -23,6 +23,22 @@ export class ToolProbe {
     cwd: string,
     options: ProbeOptions = {},
   ): Promise<string> {
+    const result = await this.result(command, args, cwd, options);
+    if (result.code !== 0)
+      throw new EnvironmentError(
+        message("probe.exit", "工具检测返回失败状态。", {
+          tool: command,
+          code: result.code,
+        }),
+      );
+    return result.stdout || result.stderr;
+  }
+  async result(
+    command: string,
+    args: string[],
+    cwd: string,
+    options: ProbeOptions = {},
+  ): Promise<{ code: number; stdout: string; stderr: string }> {
     this.guard.assert();
     if (options.signal?.aborted)
       throw new EnvironmentError(
@@ -38,13 +54,20 @@ export class ToolProbe {
     }
     this.active++;
     try {
-      return await new Promise<string>((resolve, reject) => {
+      return await new Promise<{
+        code: number;
+        stdout: string;
+        stderr: string;
+      }>((resolve, reject) => {
         const environment = {
           ...process.env,
           ...options.env,
           GOTOOLCHAIN: "local",
           RUSTUP_NO_UPDATE_CHECK: "1",
           PYTHONNOUSERSITE: "1",
+          DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1",
+          DOTNET_CLI_TELEMETRY_OPTOUT: "1",
+          DOTNET_NOLOGO: "1",
         };
         for (const key of [
           "NODE_OPTIONS",
@@ -68,7 +91,10 @@ export class ToolProbe {
           clearTimeout(deadline);
           options.signal?.removeEventListener("abort", cancel);
           this.guard.signal.removeEventListener("abort", cancel);
-          if (error || interrupted)
+          if (
+            interrupted ||
+            (error && typeof (error as NodeJS.ErrnoException).code !== "number")
+          )
             reject(
               new EnvironmentError(
                 message("probe.failed", "工具链检测失败、超时或已取消。", {
@@ -77,7 +103,12 @@ export class ToolProbe {
                 }),
               ),
             );
-          else resolve(stdout || stderr);
+          else
+            resolve({
+              code: error ? (error as Error & { code: number }).code : 0,
+              stdout,
+              stderr,
+            });
         };
         const child = execFile(
           command,

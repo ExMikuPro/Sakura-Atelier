@@ -1,0 +1,4 @@
+{
+  "command.openToolchainRegistry": "Open Current Host Toolchain Registry",
+  "command.rescanToolchains": "Rescan Current Host Toolchains"
+}

@@ -1,0 +1,4 @@
+{
+  "command.openToolchainRegistry": "打开当前环境的全局工具链注册表",
+  "command.rescanToolchains": "重新扫描当前环境的工具链"
+}
