@@ -42,6 +42,8 @@ class WizardPanel {
   private readonly model: WizardModel;
   private loaded = false;
   private disposed = false;
+  private clientRevision = 0;
+  private viewGeneration = 0;
   private completed = false;
   private tools: { pio?: string; cubemx?: string } = {};
   private readonly language = () => resolveUiLanguage(vscode.workspace.getConfiguration('sakuraAtelier').get<string>('language', 'zh-cn'), vscode.env.language);
@@ -87,13 +89,20 @@ class WizardPanel {
 
   private async post(extra?: { notice?: string }): Promise<void> {
     if (this.disposed) { return; }
+    const revision = this.clientRevision;
+    const generation = ++this.viewGeneration;
     const view = await this.model.view();
-    if (this.disposed) { return; }
-    await this.panel.webview.postMessage({ type: 'view', view: { ...view, ...(extra?.notice ? { notice: extra.notice } : {}) } });
+    if (this.disposed || revision !== this.clientRevision || generation !== this.viewGeneration) { return; }
+    await this.panel.webview.postMessage({ type: 'view', clientRevision: revision, view: { ...view, ...(extra?.notice ? { notice: extra.notice } : {}) } });
   }
 
   private async handle(raw: unknown): Promise<void> {
     const message = parseMessage(raw); if (!message) { return; }
+    const revision = (raw as { clientRevision?: unknown }).clientRevision;
+    if (typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0) {
+      if (message.type !== 'ready' && revision < this.clientRevision) { return; }
+      this.clientRevision = revision;
+    }
     const t = (m: string, ...a: unknown[]) => wizardText(this.language(), m, ...a);
     try {
       switch (message.type) {
