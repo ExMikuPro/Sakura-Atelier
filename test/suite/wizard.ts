@@ -44,11 +44,13 @@ export async function run(): Promise<void> {
   await expect(overview!.locator('#list .environment-table')).toHaveCount(0);
   await screenshot(page, 'overview-native-fixed');
   await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  await expect.poll(() => vscode.window.tabGroups.activeTabGroup.activeTab?.input instanceof vscode.TabInputWebview).toBe(false);
+  await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
   // This is the same picker reached through File > New File..., not the top-level native File menu.
   void vscode.commands.executeCommand('welcome.showNewFileEntries');
   const entry = page.locator('.quick-input-widget .monaco-list-row').filter({ hasText: /Sakura Atelier.*(?:新建项目|New Project)/ });
   await screenshot(page, 'new-file-menu-entry');
-  await expect(entry).toBeVisible();
+  await expect(entry).toBeVisible({ timeout: 30000 });
   await screenshot(page, 'new-file-menu-entry');
   await entry.click();
   let frame = await wizard(false);

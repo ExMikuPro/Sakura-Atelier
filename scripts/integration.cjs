@@ -13,7 +13,7 @@ const path = require('node:path');
   // User settings belong exclusively to this disposable Development Host.
   const userData = path.join(sandbox, 'user');
   await fs.mkdir(path.join(userData, 'User'), { recursive: true });
-  await fs.writeFile(path.join(userData, 'User/settings.json'), JSON.stringify({ 'security.workspace.trust.enabled': false, 'telemetry.telemetryLevel': 'off', 'workbench.startupEditor': 'none', 'window.restoreWindows': 'none', 'update.mode': 'none' }));
+  await fs.writeFile(path.join(userData, 'User/settings.json'), JSON.stringify({ 'security.workspace.trust.enabled': false, 'telemetry.telemetryLevel': 'off', 'workbench.startupEditor': 'none', 'window.restoreWindows': 'none', 'update.mode': 'none', 'chat.disableAIFeatures': true, 'workbench.secondarySideBar.defaultVisibility': 'hidden' }));
   try {
     const developmentPaths=[process.env.SAKURA_TEST_EXTENSION_PATH || path.resolve(__dirname, '..')];
     if(process.env.SAKURA_TEST_ADAPTERS==='1'){
