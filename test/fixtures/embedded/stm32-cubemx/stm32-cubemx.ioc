@@ -1,0 +1,13 @@
+#MicroXplorer Configuration settings - do not modify
+File.Version=6
+KeepUserPlacement=false
+Mcu.Family=STM32G0
+Mcu.IP0=NVIC
+Mcu.IPNb=1
+Mcu.Name=STM32G0B1R(B-C-E)Tx
+Mcu.Package=LQFP64
+Mcu.UserName=STM32G0B1RETx
+Mcu.CPN=STM32G0B1RET6
+ProjectManager.ProjectName=stm32-cubemx
+ProjectManager.TargetToolchain=STM32CubeIDE
+board=custom

@@ -81,6 +81,18 @@
         "title": "Sakura Atelier: PlatformIO: Test on Device (writes firmware to the board)"
       },
       {
+        "command": "sakuraAtelier.embedded.stm32.build",
+        "title": "Sakura Atelier: STM32: Build"
+      },
+      {
+        "command": "sakuraAtelier.embedded.stm32.flash",
+        "title": "Sakura Atelier: STM32: Flash (writes firmware to the board)"
+      },
+      {
+        "command": "sakuraAtelier.embedded.stm32.debug",
+        "title": "Sakura Atelier: STM32: Debug"
+      },
+      {
         "command": "sakuraAtelier.selectConfiguration",
         "title": "Sakura Atelier: Select Configuration",
         "icon": "$(chevron-down)"
