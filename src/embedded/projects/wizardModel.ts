@@ -202,12 +202,16 @@ export class WizardModel {
       tools: [
         ...(template?.language ? [{ label: projectLanguages.find(p => p.language === template.language)?.sdk ?? template.language, found: !!ctx.tools.runtimes?.[runtimeForProject(template.language)], path: ctx.tools.runtimes?.[runtimeForProject(template.language)] }] : []),
         ...(template?.backend === 'platformio' ? [{ label: t('PlatformIO Core'), found: !!ctx.tools.pio, ...(ctx.tools.pio ? { path: ctx.tools.pio } : {}) }] : []),
-        ...(template?.backend === 'stm32' ? [{ label: t('STM32CubeMX'), found: !!ctx.tools.cubemx, ...(ctx.tools.cubemx ? { path: ctx.tools.cubemx } : {}) }] : [])
+        ...(template?.backend === 'stm32' ? [
+          { label: 'STM32CubeMX 6.x', found: !!ctx.tools.cubemx, path: ctx.tools.cubemx },
+          { label: 'CMake', found: !!ctx.tools.cmake, path: ctx.tools.cmake },
+          { label: 'ARM GCC', found: !!ctx.tools.armGcc, path: ctx.tools.armGcc },
+        ] : [])
       ],
       name: s.name, parentDir: s.parentDir,
       steps: [
         { label: t('Project type'), done: !!template }, ...(kinds.length ? [{ label: t('Choose a device'), done: hasDevice }] : []), { label: t('Framework and build system'), done: hasFramework },
-        { label: t('Check the SDK and toolchain'), done: template?.language ? !!ctx.tools.runtimes?.[runtimeForProject(template.language)] : template?.backend === 'platformio' ? !!ctx.tools.pio : true },
+        { label: t('Check the SDK and toolchain'), done: template?.language ? !!ctx.tools.runtimes?.[runtimeForProject(template.language)] : template?.backend === 'platformio' ? !!ctx.tools.pio : template?.backend === 'stm32' ? !!ctx.tools.cubemx && !!ctx.tools.cmake && !!ctx.tools.armGcc : true },
         { label: t('Name and location'), done: !!s.name && !nameProblem && !!s.parentDir }, { label: t('Preview and create'), done: !plan.blockers.length && !!s.name && !!s.parentDir }
       ],
       blockers: shown.map(b => t(`blocker.${b.code}`)),

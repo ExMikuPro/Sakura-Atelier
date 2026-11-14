@@ -61,7 +61,7 @@ test('a plain CMake project is not mistaken for STM32', async () => { assert.equ
 
 test('Build uses presets when defined and never touches the device', async () => {
   const p = await plan('stm32-cmake', { operation: 'build', preset: 'Release' });
-  assert.deepEqual(p.steps.map(s => s.args), [['--preset', 'Release'], ['--build', '--preset', 'Release']]);
+  assert.deepEqual(p.steps.map(s => s.args), [['--preset', 'Release', '-B', path.join(dir('stm32-cmake'), 'build/Release')], ['--build', path.join(dir('stm32-cmake'), 'build/Release')]]);
   assert.equal(p.risk, 'safe'); assert.deepEqual(p.blockers, []);
   assert.ok(p.steps[0].env && p.steps[0].env.PATH.startsWith('/t/arm/bin:'), 'only the step environment is extended');
   assert.deepEqual((await plan('stm32-cmake', { operation: 'build', preset: 'Nope' })).blockers, ['CMake preset "Nope" is not defined.']);
@@ -76,7 +76,7 @@ test('Build without presets configures an out-of-source directory with the proje
 
 test('Build reports missing tools and CubeMX-only projects instead of guessing', async () => {
   assert.equal((await plan('stm32-cmake', { operation: 'build', tools: {} })).blockers.length, 2);
-  assert.match((await plan('stm32-cubemx', { operation: 'build' })).blockers[0], /does not generate code|Generate code/i);
+  assert.match((await plan('stm32-cubemx', { operation: 'build' })).blockers[0], /Generate.*CMake/i);
 });
 
 test('Flash needs firmware, probe and device; without them nothing is planned', async () => {

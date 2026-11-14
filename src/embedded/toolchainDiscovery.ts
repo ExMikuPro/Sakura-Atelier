@@ -1,7 +1,7 @@
 import type { DiscoveryHost } from './discoveryHost';
 import { pathApi } from './discoveryHost';
 
-export const embeddedToolIds = ['platformio', 'stm32cubemx', 'stm32cubecli', 'stm32cubeclt', 'arm-gcc', 'arm-gdb', 'cmake', 'ninja', 'stm32programmer', 'stlink-gdbserver'] as const;
+export const embeddedToolIds = ['platformio', 'stm32cubemx', 'stm32cubeclt', 'arm-gcc', 'arm-gdb', 'cmake', 'ninja', 'stm32programmer', 'stlink-gdbserver'] as const;
 export type EmbeddedToolId = typeof embeddedToolIds[number];
 /** `manual` entries come from the user's registry. `hint` entries come from scanning common locations and are only accepted after their layout is validated. */
 export type ToolSource = 'manual' | 'env' | 'path' | 'cubeclt' | 'sibling' | 'hint';
@@ -53,7 +53,6 @@ const specs: Record<EmbeddedToolId, ToolSpec> = {
       return [p.join(host.home, 'STM32CubeMX'), '/usr/local/STMicroelectronics/STM32Cube/STM32CubeMX'];
     }
   },
-  stm32cubecli: { label: 'STM32Cube CLI', names: () => ['cube'], hints: async () => [] },
   stm32cubeclt: {
     label: 'STM32CubeCLT', names: () => [],
     async hints(host) {

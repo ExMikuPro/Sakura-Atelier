@@ -1,5 +1,8 @@
 # Sakura Atelier 测试与验收
 
+> 2026-11-15：经典 STM32CubeMX 6.x CLI 创建/重新生成、交互配置和 CMake 预设构建链路已调整。按用户要求，本轮不运行测试或真实工程生成，仅执行 TypeScript 编译、ESLint 和 VSIX 打包检查。下面历史统计不代表这些改动已通过回归；流程与未验证范围见 [CubeMX 6.x 工作流](docs/STM32_CUBEMX6_WORKFLOW.md)。
+
+
 版本 **0.1.0**，扩展 ID **ExMikuPro.sakura-atelier**，最低 API 保持 VS Code **1.85.0**（实际最低版本测试 1.85.2）。本次在 macOS ARM64 验证，不能代表 Linux / Windows 已通过。
 
 当前全量集成结果见 [macOS 集成验收报告](docs/MACOS_INTEGRATION_2026-11-14.md)。

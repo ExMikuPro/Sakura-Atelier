@@ -49,7 +49,7 @@ button:hover:not(:disabled) { background: var(--vscode-button-hoverBackground); 
 button:disabled { opacity: .5; cursor: not-allowed; } button:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px; }
 .notice { color: var(--vscode-editorWarning-foreground); } .foot { color: var(--vscode-descriptionForeground); font-size: .9em; }
 </style></head><body>
-<h1>${t('STM32CubeMX project')}</h1><p class="sub">${t('Read-only view. Sakura Atelier does not edit .ioc files or generate code.')}</p>
+<h1>${t('STM32CubeMX project')}</h1><p class="sub">${t('Classic STM32CubeMX 6.x owns .ioc configuration and code generation.')}</p>
 <table>
 ${row('File name', escapeHtml(model.fileName))}
 ${row('MCU', text(info?.mcu))}
@@ -62,12 +62,14 @@ ${row('STM32CubeMX', model.cubemx === 'found' ? `<span class="ok">${t('Installed
 ${notice}
 <div class="actions">
 <button id="open-cubemx" ${model.launch.ok ? '' : 'disabled'}>${t('Open with STM32CubeMX')}</button>
+<button id="generate" ${model.launch.ok ? '' : 'disabled'}>${t('Generate CMake project')}</button>
+<button id="interactive" class="secondary" ${model.launch.ok ? '' : 'disabled'}>${t('Configure with CLI (-i)')}</button>
 <button id="open-text" class="secondary">${t('Open as text')}</button>
 <button id="locate" class="secondary">${t('Locate STM32CubeMX...')}</button>
 </div>
-<p class="foot">${t('STM32CubeMX is not started until you click "Open with STM32CubeMX".')}</p>
+<p class="foot">${t('CubeMX starts only when you explicitly open, configure or generate the project.')}</p>
 <script nonce="${nonce}">
 const vscode = acquireVsCodeApi();
-for (const [id, type] of [['open-cubemx', 'openCubeMX'], ['open-text', 'openText'], ['locate', 'locate']]) { document.getElementById(id).addEventListener('click', () => vscode.postMessage({ type })); }
+for (const [id, type] of [['open-cubemx', 'openCubeMX'], ['generate', 'generate'], ['interactive', 'interactive'], ['open-text', 'openText'], ['locate', 'locate']]) { document.getElementById(id).addEventListener('click', () => vscode.postMessage({ type })); }
 </script></body></html>`;
 }

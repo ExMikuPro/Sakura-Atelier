@@ -36,6 +36,10 @@ export class IocEditorProvider implements vscode.CustomReadonlyEditorProvider<Io
       const type = (message as { type?: unknown } | undefined)?.type;
       try {
         if (type === 'openText') { await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default'); }
+        else if (type === 'generate' || type === 'interactive') {
+          await vscode.commands.executeCommand(type === 'generate' ? 'sakuraAtelier.embedded.stm32.generate' : 'sakuraAtelier.embedded.stm32.configureCLI', document.uri);
+          await this.render(document, panel);
+        }
         else if (type === 'locate') {
           const picked = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectFolders: true, canSelectMany: false, openLabel: translateEmbedded(language, 'Locate STM32CubeMX...'), title: translateEmbedded(language, 'Locate STM32CubeMX...') });
           if (picked?.[0]) { await createToolRegistry(this.context).locate('stm32cubemx', picked[0].fsPath); await this.render(document, panel); }

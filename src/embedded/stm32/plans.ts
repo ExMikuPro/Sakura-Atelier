@@ -69,13 +69,17 @@ export function buildStm32Plan(input: Stm32PlanInput): EmbeddedPlan {
       blockers.push('This CubeMX project uses a Makefile; build it with its Makefile or regenerate it for CMake in STM32CubeMX.');
       return [];
     }
-    if (project.buildSystem !== 'cmake') { blockers.push('This is a CubeMX project without a build system. Generate code for CMake in STM32CubeMX first; Sakura Atelier does not generate code.'); return []; }
+    if (project.buildSystem !== 'cmake') { blockers.push('Generate the CMake project first with "STM32CubeMX 6.x: Generate CMake Project" on its .ioc file.'); return []; }
     if (!tools.cmake) { blockers.push('CMake was not found. Locate it with "Sakura Atelier: Embedded Tools...".'); }
     if (!tools['arm-gcc']) { blockers.push('arm-none-eabi-gcc was not found. Locate the Arm GNU Toolchain or STM32CubeCLT with "Sakura Atelier: Embedded Tools...".'); }
     const cmake = tools.cmake ?? 'cmake';
     const preset = input.preset && project.presets.includes(input.preset) ? input.preset : undefined;
     if (input.preset && !preset) { blockers.push(`CMake preset "${input.preset}" is not defined.`); }
-    if (preset) { return [step(cmake, ['--preset', preset], 'Configure'), step(cmake, ['--build', '--preset', preset, ...(input.extraArgs ?? [])], 'Build')]; }
+    if (preset) {
+      // A configure preset need not have a corresponding build preset.
+      const dir = buildDirectory(project, profile, preset);
+      return [step(cmake, ['--preset', preset, '-B', dir], 'Configure'), step(cmake, ['--build', dir, ...(input.extraArgs ?? [])], 'Build')];
+    }
     const dir = buildDirectory(project, profile);
     const configure = ['-S', project.root, '-B', dir, `-DCMAKE_BUILD_TYPE=${profile}`, ...(tools.ninja ? ['-G', 'Ninja'] : []), ...(project.toolchainFile ? [`-DCMAKE_TOOLCHAIN_FILE=${project.toolchainFile}`] : [])];
     return [step(cmake, configure, 'Configure'), step(cmake, ['--build', dir, ...(input.extraArgs ?? [])], 'Build')];

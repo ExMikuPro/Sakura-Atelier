@@ -81,6 +81,14 @@
         "title": "%command.sakuraAtelier.embedded.platformio.testOnDevice%"
       },
       {
+        "command": "sakuraAtelier.embedded.stm32.generate",
+        "title": "%command.sakuraAtelier.embedded.stm32.generate%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.stm32.configureCLI",
+        "title": "%command.sakuraAtelier.embedded.stm32.configureCLI%"
+      },
+      {
         "command": "sakuraAtelier.embedded.stm32.build",
         "title": "%command.sakuraAtelier.embedded.stm32.build%"
       },

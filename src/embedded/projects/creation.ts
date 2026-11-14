@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { DeviceRef, normalizeRef } from '../devices/model';
 import type { PioBoardInfo } from '../devices/pioBoards';
 import type { ProjectTemplate } from './template';
+import { createCubeMxScript, type CubeMxGeneration } from '../stm32/cubeMxScript';
 
 export interface CreationRequest {
   templateId: string; device?: DeviceRef; framework?: string;
@@ -14,12 +15,12 @@ export interface CreationRequest {
   options?: CreationOptions;
 }
 /** The only tunables. Values are validated, and none of them can carry a path. */
-export interface CreationOptions { monitorSpeed?: string; sampleCode?: boolean; generator?: 'cmake' | 'makefile' | 'cubeide' }
+export interface CreationOptions { monitorSpeed?: string; sampleCode?: boolean; generator?: 'cmake' | 'makefile' | 'cubeide'; cliMode?: 'quiet' | 'script' }
 
 export interface CreationContext {
   template: ProjectTemplate | undefined;
   /** Tools as found right now; never stored with a template. */
-  tools: { pio?: string; cubemx?: string; runtimes?: Partial<Record<RuntimeLanguage, string>> };
+  tools: { pio?: string; cubemx?: string; cmake?: string; armGcc?: string; ninja?: string; runtimes?: Partial<Record<RuntimeLanguage, string>> };
   /** Boards known to PlatformIO right now, by id. */
   boards: ReadonlyMap<string, PioBoardInfo>;
   fs: { exists(file: string): Promise<boolean>; isDirectory(file: string): Promise<boolean> };
@@ -27,12 +28,12 @@ export interface CreationContext {
   remote?: boolean; platform?: NodeJS.Platform;
 }
 
-export type BlockerCode = 'template' | 'name' | 'parent' | 'exists' | 'device-required' | 'device-kind' | 'board-unknown' | 'framework' | 'option' | 'no-pio' | 'not-stm32';
+export type BlockerCode = 'template' | 'name' | 'parent' | 'exists' | 'device-required' | 'device-kind' | 'board-unknown' | 'framework' | 'option' | 'no-pio' | 'not-stm32' | 'no-cubemx' | 'remote-cubemx' | 'cubemx-path';
 export interface Blocker { code: BlockerCode; message: string }
 export type CreationStep =
   | { kind: 'mkdir'; path: string }
   | { kind: 'run'; command: string; args: string[]; cwd: string; label: string }
-  | { kind: 'launch-cubemx'; command: string; args: string[]; confirm: string }
+  | { kind: 'generate-cubemx'; job: CubeMxGeneration }
   | { kind: 'write'; path: string; content: string }
   | { kind: 'open'; path: string };
 
@@ -52,6 +53,7 @@ export function sanitizeOptions(raw: unknown): { options: CreationOptions; inval
     if (key === 'monitorSpeed' && typeof value === 'string' && /^\d{3,7}$/.test(value)) { options.monitorSpeed = value; }
     else if (key === 'sampleCode' && typeof value === 'boolean') { options.sampleCode = value; }
     else if (key === 'generator' && (value === 'cmake' || value === 'makefile' || value === 'cubeide')) { options.generator = value; }
+    else if (key === 'cliMode' && (value === 'quiet' || value === 'script')) { options.cliMode = value; }
     else { invalid.push(key); }
   }
   return { options, invalid };
@@ -120,15 +122,22 @@ export async function planCreation(request: CreationRequest, context: CreationCo
     return { target, steps, blockers, warnings, preview };
   }
 
-  // STM32CubeMX: Sakura Atelier creates the folder; STM32CubeMX configures the pins and generates the code.
+  // Classic STM32CubeMX owns .ioc serialization and all generated source/build files.
+  if (context.remote) block('remote-cubemx', 'Open the project locally to generate with classic STM32CubeMX.');
+  if (!context.tools.cubemx) block('no-cubemx', 'Locate classic STM32CubeMX 6.x before creating the project.');
+  let job: CubeMxGeneration | undefined;
+  if (device && device.kind !== 'pio-board' && context.tools.cubemx && !nameProblem && request.parentDir) {
+    try {
+      const toolchain = options.generator === 'makefile' ? 'Makefile' : options.generator === 'cubeide' ? 'STM32CubeIDE' : 'CMake';
+      job = { executable: context.tools.cubemx, root: target, ...createCubeMxScript(device, request.name, target, toolchain), toolchain, mode: options.cliMode === 'script' ? '-s' : '-q', device };
+    } catch (error) { block('cubemx-path', error instanceof Error ? error.message : String(error)); }
+  }
   if (!blockers.length) {
     steps.push({ kind: 'mkdir', path: target });
-    if (context.remote) { warnings.push({ code: 'remote-cubemx', message: 'This is a remote window: a local STM32CubeMX cannot be started for a remote folder. Open the folder locally to use STM32CubeMX.' }); }
-    else if (!context.tools.cubemx) { warnings.push({ code: 'no-cubemx', message: 'STM32CubeMX was not found. The folder is created; locate STM32CubeMX with "Sakura Atelier: Embedded Tools..." to configure the device.' }); }
-    else { steps.push({ kind: 'launch-cubemx', command: context.tools.cubemx, args: [], confirm: `Start STM32CubeMX now to configure ${device?.id ?? 'the device'}? Choose ${options.generator === 'makefile' ? 'Makefile' : options.generator === 'cubeide' ? 'STM32CubeIDE' : 'CMake'} as the toolchain in Project Manager and save the project into ${target}.` }); }
+    if (job) steps.push({ kind: 'generate-cubemx', job });
     steps.push({ kind: 'open', path: target });
   }
-  preview.push(`STM32CubeMX · ${device?.id ?? ''}`, `${options.generator ?? 'cmake'}`, `${target}`);
+  preview.push(`STM32CubeMX 6.x · ${device?.id ?? ''}`, `${options.generator ?? 'cmake'} · ${job?.mode ?? '-q'}`, target, ...(job ? [job.ioc, job.script] : []));
   return { target, steps, blockers, warnings, preview };
 }
 
@@ -138,8 +147,7 @@ export interface CreationDeps {
   run(command: string, args: string[], cwd: string): Promise<void>;
   /** Must use exclusive creation; never overwrite an existing file. */
   writeFile?(file: string, content: string): Promise<void>;
-  confirm(message: string): Promise<boolean>;
-  launch(command: string, args: string[]): void;
+  generateCubeMx?(job: CubeMxGeneration): Promise<void>;
 }
 export interface CreationResult { target: string; open?: string; launched: boolean }
 
@@ -151,7 +159,7 @@ export async function executeCreation(plan: CreationPlan, deps: CreationDeps): P
     if (step.kind === 'mkdir') { await deps.mkdir(step.path); }
     else if (step.kind === 'write') { if (!deps.writeFile) throw new Error('Project file writer is unavailable.'); await deps.writeFile(step.path, step.content); }
     else if (step.kind === 'run') { await deps.run(step.command, step.args, step.cwd); }
-    else if (step.kind === 'launch-cubemx') { if (await deps.confirm(step.confirm)) { deps.launch(step.command, step.args); launched = true; } }
+    else if (step.kind === 'generate-cubemx') { if (!deps.generateCubeMx) throw new Error('CubeMX generator is unavailable.'); await deps.generateCubeMx(step.job); launched = true; }
     else { open = step.path; }
   }
   return { target: plan.target, open, launched };

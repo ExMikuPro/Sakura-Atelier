@@ -47,7 +47,7 @@ for (const spec of projectLanguages) {
     const plan = await planCreation({ templateId: 'general.' + spec.language, parentDir: root, name: 'My.Project' }, context(spec.language));
     assert.deepEqual(plan.blockers, []);
     assert.ok(plan.warnings.some(w => w.code === 'no-runtime'));
-    assert.ok(!plan.steps.some(s => s.kind === 'run' || s.kind === 'launch-cubemx'));
+    assert.ok(!plan.steps.some(s => s.kind === 'run' || s.kind === 'generate-cubemx'));
     const result = await executeCreation(plan, writesOnly);
     assert.equal(result.open, path.join(root, 'My.Project'));
     await fs.stat(path.join(result.target, spec.entry));

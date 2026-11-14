@@ -71,5 +71,7 @@
   "command.sakuraAtelier.newProject": "Sakura Atelier：新建项目…",
   "command.openToolchainRegistry": "打开当前环境的全局工具链注册表",
   "command.rescanToolchains": "重新扫描当前环境的工具链",
-  "command.checkProjectDependencies": "Sakura Atelier：项目依赖检查与修复…"
+  "command.checkProjectDependencies": "Sakura Atelier：项目依赖检查与修复…",
+  "command.sakuraAtelier.embedded.stm32.generate": "Sakura Atelier：STM32CubeMX 6.x：生成 CMake 工程",
+  "command.sakuraAtelier.embedded.stm32.configureCLI": "Sakura Atelier：STM32CubeMX 6.x：使用 CLI 配置 (-i)"
 }

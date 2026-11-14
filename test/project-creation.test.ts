@@ -66,7 +66,7 @@ test('options carry only plain values: no paths, no unknown keys', () => {
 });
 
 test('execution creates the directory and runs the CLI once; a failing step stops and deletes nothing', async () => {
-  const calls: string[] = []; const deps: CreationDeps = { mkdir: async p => { calls.push(`mkdir ${p}`); }, run: async (c, a) => { calls.push(`run ${c} ${a[0]}`); }, confirm: async () => true, launch: () => calls.push('launch') };
+  const calls: string[] = []; const deps: CreationDeps = { mkdir: async p => { calls.push(`mkdir ${p}`); }, run: async (c, a) => { calls.push(`run ${c} ${a[0]}`); } };
   const plan = await planCreation(request(), context());
   assert.deepEqual(await executeCreation(plan, deps), { target: '/work/blink', open: '/work/blink', launched: false });
   assert.deepEqual(calls, ['mkdir /work/blink', 'run /pio/bin/pio project']);
@@ -77,30 +77,36 @@ test('execution creates the directory and runs the CLI once; a failing step stop
 
 test('a folder created after planning is not reused: mkdir fails and the CLI never runs', async () => {
   let ran = false;
-  const deps: CreationDeps = { mkdir: async () => { throw Object.assign(new Error('EEXIST'), { code: 'EEXIST' }); }, run: async () => { ran = true; }, confirm: async () => true, launch: () => undefined };
+  const deps: CreationDeps = { mkdir: async () => { throw Object.assign(new Error('EEXIST'), { code: 'EEXIST' }); }, run: async () => { ran = true; } };
   await assert.rejects(executeCreation(await planCreation(request(), context()), deps), /EEXIST/);
   assert.equal(ran, false);
 });
 
-test('STM32CubeMX plan creates only the folder, asks before starting CubeMX, and never generates code itself', async () => {
+test('classic CubeMX project plan creates .ioc and generates through the official CLI before opening', async () => {
   const req = request({ templateId: 'stm32.cubemx', device: { kind: 'stm32-mcu', id: 'STM32G0B1RETx' }, framework: undefined, options: { generator: 'cmake' } });
   const plan = await planCreation(req, context({ template: template('stm32.cubemx') }));
-  assert.deepEqual(plan.blockers, []); assert.deepEqual(plan.steps.map(s => s.kind), ['mkdir', 'launch-cubemx', 'open']);
-  const launch = plan.steps[1] as { args: string[]; confirm: string };
-  assert.deepEqual(launch.args, []); assert.match(launch.confirm, /Start STM32CubeMX now.*CMake.*\/work\/blink/);
+  assert.deepEqual(plan.blockers, []);
+  assert.deepEqual(plan.steps.map(s => s.kind), ['mkdir', 'generate-cubemx', 'open']);
+  const generate = plan.steps[1]; assert.equal(generate.kind, 'generate-cubemx');
+  if (generate.kind !== 'generate-cubemx') throw new Error('Missing generation step');
+  assert.equal(generate.job.mode, '-q');
+  assert.match(generate.job.script, /load STM32G0B1RETx/);
+  assert.match(generate.job.script, /project toolchain "CMake"/);
+  assert.match(generate.job.script, /config save "\/work\/blink\/blink.ioc"/);
+  assert.match(generate.job.script, /project generate/);
   const calls: string[] = [];
-  const deps = (answer: boolean): CreationDeps => ({ mkdir: async () => { calls.push('mkdir'); }, run: async () => { calls.push('run'); }, confirm: async () => answer, launch: c => calls.push(`launch ${c}`) });
-  assert.equal((await executeCreation(plan, deps(false))).launched, false); assert.deepEqual(calls, ['mkdir']);
-  calls.length = 0;
-  assert.equal((await executeCreation(plan, deps(true))).launched, true); assert.deepEqual(calls, ['mkdir', 'launch /opt/CubeMX/STM32CubeMX']);
+  const deps: CreationDeps = { mkdir: async () => { calls.push('mkdir'); }, run: async () => {}, generateCubeMx: async () => { calls.push('generate'); } };
+  assert.equal((await executeCreation(plan, deps)).launched, true);
+  assert.deepEqual(calls, ['mkdir', 'generate']);
+  await assert.rejects(executeCreation(plan, { ...deps, generateCubeMx: async () => { throw new Error('Generation failed'); } }), /Generation failed/);
 });
 
-test('STM32CubeMX plan without CubeMX or in a remote window still creates the folder, warns, and never launches', async () => {
+test('missing CubeMX and remote projects block creation rather than report an empty directory as success', async () => {
   const req = request({ templateId: 'stm32.cubemx', device: { kind: 'stm32-board', id: 'NUCLEO-G071RB' }, framework: undefined });
   const missing = await planCreation(req, context({ template: template('stm32.cubemx'), tools: {} }));
-  assert.ok(!missing.steps.some(s => s.kind === 'launch-cubemx')); assert.match(missing.warnings[0].message, /not found/); assert.equal(missing.warnings[0].code, 'no-cubemx');
+  assert.deepEqual(missing.steps, []); assert.ok(missing.blockers.some(b => b.code === 'no-cubemx'));
   const remote = await planCreation(req, context({ template: template('stm32.cubemx'), remote: true }));
-  assert.ok(!remote.steps.some(s => s.kind === 'launch-cubemx')); assert.match(remote.warnings[0].message, /remote/); assert.equal(remote.warnings[0].code, 'remote-cubemx');
+  assert.deepEqual(remote.steps, []); assert.ok(remote.blockers.some(b => b.code === 'remote-cubemx'));
 });
 
 test('importing an existing STM32 project only opens it, after checking it is one', async () => {
@@ -179,7 +185,7 @@ test('real PlatformIO CLI creates the project (set SAKURA_TEST_PIO to run)', { s
     const plan = await planCreation(request({ parentDir: parent, options: { monitorSpeed: '115200' } }), real);
     assert.deepEqual(plan.blockers, []);
     const { execFile } = await import('node:child_process');
-    await executeCreation(plan, { mkdir: p => fs.mkdir(p), run: (c, a, cwd) => new Promise((res, rej) => execFile(c, a, { cwd }, e => e ? rej(e) : res())), confirm: async () => false, launch: () => undefined });
+    await executeCreation(plan, { mkdir: p => fs.mkdir(p), run: (c, a, cwd) => new Promise((res, rej) => execFile(c, a, { cwd }, e => e ? rej(e) : res())) });
     const ini = await fs.readFile(path.join(parent, 'blink', 'platformio.ini'), 'utf8');
     assert.match(ini, /\[env:nucleo_g071rb\]/); assert.match(ini, /board = nucleo_g071rb/); assert.match(ini, /framework = stm32cube/); assert.match(ini, /monitor_speed = 115200/);
     assert.deepEqual(codes(await planCreation(request({ parentDir: parent }), real)), ['exists']);

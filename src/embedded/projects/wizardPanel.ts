@@ -3,7 +3,7 @@ import type { CreationContext } from './creation';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { generateWithCubeMx, requireClassicCubeMx, cancelCubeMxGenerations } from '../stm32/cubeMxCli';
 import { adapterRegistry } from '../../adapters';
 import type { BackendHost } from '../../adapterTypes';
 import { DeviceFavorites } from '../devices/favorites';
@@ -47,10 +47,15 @@ class WizardPanel {
   private clientRevision = 0;
   private viewGeneration = 0;
   private completed = false;
+  private creating = false;
+  private readonly output: vscode.OutputChannel;
   private tools: CreationContext['tools'] = {};
   private readonly language = () => resolveUiLanguage(vscode.workspace.getConfiguration('sakuraAtelier').get<string>('language', 'zh-cn'), vscode.env.language);
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly onDispose: () => void) {
+    this.output = vscode.window.createOutputChannel('Sakura Atelier — STM32CubeMX');
+    context.subscriptions.push(this.output);
+    context.subscriptions.push({ dispose: cancelCubeMxGenerations });
     for (const template of builtinProjectTemplates) { if (!adapterRegistry.projectTemplates.has(template.id)) { adapterRegistry.projectTemplates.register(template.id, template); } }
     const catalog = deviceCatalog(context);
     // STM32 devices come from the workspaces' own .ioc files; added once per extension host.
@@ -93,7 +98,7 @@ class WizardPanel {
     await registry?.settled();
     const runtimes: NonNullable<CreationContext['tools']['runtimes']> = {};
     for (const tool of registry?.snapshot().tools ?? []) { if (!runtimes[tool.language] && (tool.available || tool.manual) && await fs.stat(tool.executable).then(s => s.isFile(), () => false)) runtimes[tool.language] = tool.executable; }
-    this.tools = { runtimes, pio: statuses.platformio.selected?.path, cubemx: statuses.stm32cubemx.selected?.path };
+    this.tools = { runtimes, pio: statuses.platformio.selected?.path, cubemx: statuses.stm32cubemx.selected?.path, cmake: statuses.cmake.selected?.path, armGcc: statuses['arm-gcc'].selected?.path, ninja: statuses.ninja.selected?.path };
   }
 
   private async post(extra?: { notice?: string }): Promise<void> {
@@ -102,7 +107,7 @@ class WizardPanel {
     const generation = ++this.viewGeneration;
     const view = await this.model.view();
     if (this.disposed || revision !== this.clientRevision || generation !== this.viewGeneration) { return; }
-    await this.panel.webview.postMessage({ type: 'view', clientRevision: revision, view: { ...view, ...(extra?.notice ? { notice: extra.notice } : {}) } });
+    await this.panel.webview.postMessage({ type: 'view', clientRevision: revision, view: { ...view, canCreate: view.canCreate && !this.creating, ...(extra?.notice ? { notice: extra.notice } : {}) } });
   }
 
   private async handle(raw: unknown): Promise<void> {
@@ -150,15 +155,22 @@ class WizardPanel {
   }
 
   private async create(): Promise<void> {
+    if (this.creating || this.disposed) return;
+    this.creating = true;
+    try { await this.post(); await this.createProject(); }
+    finally { this.creating = false; await this.post(); }
+  }
+
+  private async createProject(): Promise<void> {
     const s = this.model.state; const t = (m: string, ...a: unknown[]) => wizardText(this.language(), m, ...a);
     await this.refreshTools();
     const plan = await this.model.plan();
     if (plan.blockers.length || !plan.steps.length) { await this.post(); return; }
+    for (const step of plan.steps) { if (step.kind === 'generate-cubemx') await requireClassicCubeMx(step.job.executable); }
     try {
-      const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: t('Create project') }, () => executeCreation(plan, {
+      const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: t('Create project'), cancellable: true }, (_progress, cancellation) => executeCreation(plan, {
         mkdir: p => fs.mkdir(p), writeFile: (file, content) => fs.writeFile(file, content, { flag: 'wx' }), run: async (c, a, cwd) => { await nodeRunner(c, a, cwd, 120000); },
-        confirm: async message => await vscode.window.showWarningMessage(message, { modal: true }, 'OK') === 'OK',
-        launch: (command, args) => { const child = spawn(command, args, { detached: true, stdio: 'ignore' }); child.once('error', e => { void vscode.window.showErrorMessage(`Sakura Atelier: ${t('Could not create the project: {0}', e.message)}`); }); child.unref(); }
+        generateCubeMx: job => { this.output.show(true); return generateWithCubeMx(job, text => this.output.append(text), cancellation); }
       }));
       await this.model.recordSuccess();
       const defaults = this.context.globalState.get<Defaults>(defaultsKey, {});

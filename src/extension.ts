@@ -40,6 +40,12 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand(name==='newProject'?'sakuraAtelier.newProject':`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
   }
   context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.checkProjectDependencies',safe(()=>controller!.checkDependencies())));
+  for (const [name, action] of [['generate', 'generate'], ['configureCLI', 'interactive']] as const) {
+    context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.stm32.${name}`, (uri?: vscode.Uri) => safe(async () => {
+      const { cubeMxAction } = await import('./embedded/stm32/cubeMxActions');
+      await cubeMxAction(context, action, uri);
+    })()));
+  }
   const updateLanguage=()=>{void vscode.commands.executeCommand('setContext','sakuraAtelier.uiEnglish',language()==='en');controller?.updateStatus();};
   updateLanguage();context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event=>{if(event.affectsConfiguration('sakuraAtelier.language'))updateLanguage();}));
   for(const name of ['run','debug','selectConfiguration','stop','runFile','runProject','configure','editConfigurations','addConfiguration','manageToolchains','sdkManager','pythonTerminal']){context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.english.${name}`,(...args:unknown[])=>vscode.commands.executeCommand(`sakuraAtelier.${name}`,...args)));}

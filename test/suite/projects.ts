@@ -20,7 +20,7 @@ export async function run(): Promise<void> {
       template: builtinProjectTemplates.find(t => t.id === 'general.' + spec.language), tools: {}, boards: new Map(),
       fs: { exists: p => fs.lstat(p).then(() => true, () => false), isDirectory: p => fs.stat(p).then(s => s.isDirectory(), () => false) }, isStm32Project: async () => false,
     });
-    await executeCreation(plan, { mkdir: p => fs.mkdir(p).then(() => {}), writeFile: (p, content) => fs.writeFile(p, content, { flag: 'wx' }), run: async () => { throw new Error('Creation unexpectedly ran a command'); }, confirm: async () => false, launch: () => { throw new Error('Creation unexpectedly launched an application'); } });
+    await executeCreation(plan, { mkdir: p => fs.mkdir(p).then(() => {}), writeFile: (p, content) => fs.writeFile(p, content, { flag: 'wx' }), run: async () => { throw new Error('Creation unexpectedly ran a command'); } });
     const config = validateFile(JSON.parse(await fs.readFile(path.join(plan.target, '.vscode/sakura-atelier.json'), 'utf8')));
     assert.equal(config.configurations[0].templateId, spec.template);
     const run = (command: string, args: string[]) => exec(command, args, { cwd: plan.target, timeout: 120000, env: { ...process.env, GOTOOLCHAIN: 'local' } });

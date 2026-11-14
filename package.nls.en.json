@@ -71,5 +71,7 @@
   "command.sakuraAtelier.newProject": "Sakura Atelier: New Project...",
   "command.openToolchainRegistry": "Open Current Host Toolchain Registry",
   "command.rescanToolchains": "Rescan Current Host Toolchains",
-  "command.checkProjectDependencies": "Sakura Atelier: Check Project Dependencies..."
+  "command.checkProjectDependencies": "Sakura Atelier: Check Project Dependencies...",
+  "command.sakuraAtelier.embedded.stm32.generate": "Sakura Atelier: STM32CubeMX 6.x: Generate CMake Project",
+  "command.sakuraAtelier.embedded.stm32.configureCLI": "Sakura Atelier: STM32CubeMX 6.x: Configure with CLI (-i)"
 }

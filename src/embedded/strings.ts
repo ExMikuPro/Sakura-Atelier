@@ -5,6 +5,10 @@
 export type UiLanguage = 'zh-cn' | 'en';
 
 export const embeddedChinese: Record<string, string> = {
+  'CubeMX starts only when you explicitly open, configure or generate the project.': '只有主动打开、配置或生成工程时，才会启动 CubeMX。',
+  'Classic STM32CubeMX 6.x owns .ioc configuration and code generation.': '使用经典 STM32CubeMX 6.x 完成 .ioc 配置与代码生成。',
+  'Generate CMake project': '生成 CMake 工程',
+  'Configure with CLI (-i)': '使用 CLI 配置 (-i)',
   'STM32CubeMX project': 'STM32CubeMX 工程',
   'File name': '文件名',
   'MCU': 'MCU 型号',

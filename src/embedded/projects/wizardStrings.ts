@@ -2,6 +2,12 @@ import { embeddedChinese, UiLanguage } from '../strings';
 
 /** Chinese text for the project wizard. Same English-key convention as the shared dictionary of PR #1. */
 export const wizardChinese: Record<string, string> = {
+  'CubeMX CLI mode': 'CubeMX CLI 模式',
+  'Quiet script (-q)': '静默脚本 (-q)', 'Script with UI (-s)': '显示界面的脚本 (-s)',
+  'blocker.no-cubemx': '请先在嵌入式工具中定位经典 STM32CubeMX 6.x，才能生成项目。',
+  'blocker.remote-cubemx': '请在本地工作区使用经典 STM32CubeMX 生成项目。',
+  'blocker.cubemx-path': 'CubeMX 脚本不接受路径中的双引号、换行符或空字符，请调整保存目录。',
+  'Generate the .ioc and complete project with the classic STM32CubeMX 6.x CLI.': '通过经典 STM32CubeMX 6.x CLI 生成 .ioc 和完整工程。',
   'STM32 devices come from your local STM32CubeMX database and workspace .ioc files.': 'STM32 器件来自本机 STM32CubeMX 数据库和工作区 .ioc 文件。',
   'No STM32 devices loaded. Locate STM32CubeMX, then reload devices, or enter a part number manually.': '尚未加载 STM32 器件。请定位 STM32CubeMX 后点击“重新加载器件”，也可以手动添加型号。',
   'Empty project': '空项目',
@@ -75,6 +81,7 @@ export function wizardText(language: UiLanguage, message: string, ...args: unkno
 
 /** Static labels the page needs. The page itself contains no text of its own; everything comes translated from here. */
 export const wizardLabelKeys = [
+  'CubeMX CLI mode', 'Quiet script (-q)', 'Script with UI (-s)',
   'No files will be created.',
   'Programming languages', 'Embedded projects', 'Files to create', 'New project', 'Project types', 'My favorite templates', 'Search by name, part number, vendor, platform or board id', 'Reload devices', 'Clear recent devices',
   'Add to favorites', 'Remove from favorites', 'Device', 'Framework', 'Build system', 'SDK and toolchain', 'Project name', 'Save location', 'Browse...', 'Preview',

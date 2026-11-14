@@ -52,6 +52,7 @@
 更多细节请参阅 [嵌入式开发使用说明](docs/embedded-development-zh.md)：
 - **PlatformIO 集成**：自动解析 `platformio.ini` 中的多环境（`[env:*]`），提供构建（Build）、清理（Clean）、上传（Upload）、串口监视器（Monitor）、测试及调试入口。
 - **STM32 独立工程流**：支持识别 STM32CubeMX 与 STM32 CMake 工程，自动发现 Arm GNU Toolchain、CMake、Ninja、STM32CubeProgrammer 与 ST-LINK GDB Server。
+- **经典 STM32CubeMX 6.x 工程生成**：通过内置 CLI `-q` / `-s` 创建 `.ioc` 和 CMake 工程，支持 `-i` 配置及已有工程重新生成。[使用说明](docs/STM32_CUBEMX6_WORKFLOW.md)。本轮按要求未运行真实生成、编译或硬件验收。
 - **操作严格分离**：将 **Build（构建）**、**Flash（烧录）** 与 **Debug（调试）** 拆分为独立动作，普通运行绝不会误触发硬件烧录，烧录过程仅执行编程与校验，拒绝整片擦除参数。
 - **专用 `.ioc` 只读视图**：双击 `.ioc` 文件即可在 VS Code 内直观查看工程与 MCU 摘要，并提供安全唤起本地 STM32CubeMX 的入口（SSH/WSL/容器远程环境下自动禁用本地启动并给出提示）。
 

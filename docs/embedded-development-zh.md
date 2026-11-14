@@ -2,7 +2,7 @@
 
 Sakura Atelier 为 PlatformIO 和 STM32 项目提供统一入口。实际的构建、烧录、调试仍由官方工具完成：PlatformIO Core、STM32CubeMX、STM32CubeProgrammer、Arm GNU Toolchain，以及 PlatformIO IDE、Cortex-Debug 等官方或社区扩展。Sakura Atelier 不修改系统环境变量，不修改其他扩展的文件，也不自行实现调试协议。
 
-统一向导也提供常用语言的基础项目模板，详见 [新建项目](PROJECT_CREATION.md)。
+统一向导也提供常用语言的基础项目模板，详见 [新建项目](PROJECT_CREATION.md)。经典 STM32 创建、配置和构建流程见 [CubeMX 6.x 工作流](STM32_CUBEMX6_WORKFLOW.md)。
 
 ## 新建项目
 
@@ -18,14 +18,14 @@ Sakura Atelier 为 PlatformIO 和 STM32 项目提供统一入口。实际的构�
 | 项目类型 | 做什么 |
 | --- | --- |
 | PlatformIO 项目 | 选择开发板和该开发板支持的框架，用官方 `pio project init` 创建。 |
-| STM32CubeMX 项目 | 创建项目目录；确认后才启动 STM32CubeMX 去配置器件和生成代码。 |
+| STM32CubeMX 项目 | 使用经典 6.x CLI 的 `-q`（默认）或 `-s`，生成 `.ioc` 和完整 CMake / ARM GCC 工程；生成文件检查成功后再打开。 |
 | 打开已有 STM32 项目 | 检查目录里有 `.ioc` 或 STM32 CMake 工程后直接打开。 |
 
 要点：
 
 - 目标目录已存在时不会创建，也不会覆盖或合并任何文件。
 - STM32 MCU 型号（如 `STM32G0B1RETx`）、ST 开发板（如 `NUCLEO-G071RB`）和 PlatformIO 开发板 ID（如 `nucleo_g071rb`）是三种不同的器件，不会互相当作对方使用。
-- Sakura Atelier 不具备 STM32CubeMX 的引脚配置和代码生成能力，这部分由 STM32CubeMX 完成。
+- 插件编排经典 CubeMX 6.x CLI；`.ioc` 配置与源代码由 CubeMX 生成。已有 `.ioc` 页面提供 `-i` 配置及 `-q` / `-s` 重新生成入口。
 - 创建成功后才会把器件记入“最近使用”。
 
 ## 器件收藏
@@ -49,7 +49,7 @@ Sakura Atelier 为 PlatformIO 和 STM32 项目提供统一入口。实际的构�
 
 ## 嵌入式工具
 
-命令 **Sakura Atelier: Embedded Tools...** 列出并可手动定位：PlatformIO Core、STM32CubeMX、STM32Cube CLI、STM32CubeCLT、Arm GNU Toolchain 和 GDB、CMake、Ninja、STM32CubeProgrammer、ST-LINK GDB Server。发现顺序为：你保存的位置、`PATH`、CubeCLT 内置工具、Arm 编译器旁的工具、经过校验的常见位置。不依赖固定安装路径，Windows、Linux、macOS 通用。
+命令 **Sakura Atelier: Embedded Tools...** 列出并可手动定位：PlatformIO Core、STM32CubeMX 6.x、STM32CubeCLT、Arm GNU Toolchain 和 GDB、CMake、Ninja、STM32CubeProgrammer、ST-LINK GDB Server。发现顺序为：你保存的位置、`PATH`、CubeCLT 内置工具、Arm 编译器旁的工具、经过校验的常见位置。不依赖固定安装路径，Windows、Linux、macOS 通用。
 
 ## 构建、烧录与调试
 
