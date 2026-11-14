@@ -30,7 +30,9 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand(`${namespace}.selectConfiguration`,(id?:string)=>safe(()=>controller!.selectConfiguration(id))()));
   }
   // Embedded support is loaded on first use so activation stays unchanged.
-  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.manageTools',safe(async()=>{const embedded=await import('./embedded/toolsCommand');await embedded.manageEmbeddedTools(embedded.createToolRegistry(context));})));
+  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice'] as const){
+    context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!);})));
+  }
   if(vscode.extensions.getExtension('sakura-runner-local.sakura-runner')){void vscode.window.showInformationMessage('Sakura Atelier has a new extension ID. Disable the old Sakura Runner extension to avoid duplicate toolbar buttons.');}
 }
 async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): Promise<void> {
