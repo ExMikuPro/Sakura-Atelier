@@ -29,6 +29,8 @@ export function activate(context: vscode.ExtensionContext): void {
     register('stop',safe(()=>controller!.stop()));register('configure',safe(()=>controller!.openManager()));register('editConfigurations',safe(()=>controller!.openManager()));register('addConfiguration',safe(()=>controller!.openManager('configurations',true)));register('manageToolchains',safe(()=>controller!.openManager('toolchains')));register('sdkManager',safe(()=>controller!.openManager('sdk')));register('pythonTerminal',safe(()=>controller!.createPythonTerminal()));
     context.subscriptions.push(vscode.commands.registerCommand(`${namespace}.selectConfiguration`,(id?:string)=>safe(()=>controller!.selectConfiguration(id))()));
   }
+  // Embedded support is loaded on first use so activation stays unchanged.
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.manageTools',safe(async()=>{const embedded=await import('./embedded/toolsCommand');await embedded.manageEmbeddedTools(embedded.createToolRegistry(context));})));
   if(vscode.extensions.getExtension('sakura-runner-local.sakura-runner')){void vscode.window.showInformationMessage('Sakura Atelier has a new extension ID. Disable the old Sakura Runner extension to avoid duplicate toolbar buttons.');}
 }
 async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): Promise<void> {
