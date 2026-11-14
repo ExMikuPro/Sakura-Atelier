@@ -33,7 +33,8 @@ export type CreationStep =
   | { kind: 'launch-cubemx'; command: string; args: string[]; confirm: string }
   | { kind: 'open'; path: string };
 
-export interface CreationPlan { target: string; steps: CreationStep[]; blockers: Blocker[]; warnings: string[]; preview: string[] }
+export interface PlanWarning { code: 'remote-cubemx' | 'no-cubemx'; message: string }
+export interface CreationPlan { target: string; steps: CreationStep[]; blockers: Blocker[]; warnings: PlanWarning[]; preview: string[] }
 
 const reserved = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 /** One path segment: no separators, no leading dot or dash, no trailing dot, no Windows device names. */
@@ -56,7 +57,7 @@ export function sanitizeOptions(raw: unknown): { options: CreationOptions; inval
 /** Builds the steps without touching the disk or running anything. An existing target is always a blocker: nothing is merged or overwritten. */
 export async function planCreation(request: CreationRequest, context: CreationContext): Promise<CreationPlan> {
   const { template } = context;
-  const blockers: Blocker[] = []; const warnings: string[] = []; const steps: CreationStep[] = []; const preview: string[] = [];
+  const blockers: Blocker[] = []; const warnings: PlanWarning[] = []; const steps: CreationStep[] = []; const preview: string[] = [];
   const block = (code: BlockerCode, message: string) => { blockers.push({ code, message }); };
   const target = path.join(request.parentDir, request.name);
   if (!template) { block('template', 'The project template is not available.'); return { target, steps, blockers, warnings, preview }; }
@@ -100,8 +101,8 @@ export async function planCreation(request: CreationRequest, context: CreationCo
   // STM32CubeMX: Sakura Atelier creates the folder; STM32CubeMX configures the pins and generates the code.
   if (!blockers.length) {
     steps.push({ kind: 'mkdir', path: target });
-    if (context.remote) { warnings.push('This is a remote window: a local STM32CubeMX cannot be started for a remote folder. Open the folder locally to use STM32CubeMX.'); }
-    else if (!context.tools.cubemx) { warnings.push('STM32CubeMX was not found. The folder is created; locate STM32CubeMX with "Sakura Atelier: Embedded Tools..." to configure the device.'); }
+    if (context.remote) { warnings.push({ code: 'remote-cubemx', message: 'This is a remote window: a local STM32CubeMX cannot be started for a remote folder. Open the folder locally to use STM32CubeMX.' }); }
+    else if (!context.tools.cubemx) { warnings.push({ code: 'no-cubemx', message: 'STM32CubeMX was not found. The folder is created; locate STM32CubeMX with "Sakura Atelier: Embedded Tools..." to configure the device.' }); }
     else { steps.push({ kind: 'launch-cubemx', command: context.tools.cubemx, args: [], confirm: `Start STM32CubeMX now to configure ${device?.id ?? 'the device'}? Choose ${options.generator === 'makefile' ? 'Makefile' : options.generator === 'cubeide' ? 'STM32CubeIDE' : 'CMake'} as the toolchain in Project Manager and save the project into ${target}.` }); }
     steps.push({ kind: 'open', path: target });
   }

@@ -98,9 +98,9 @@ test('STM32CubeMX plan creates only the folder, asks before starting CubeMX, and
 test('STM32CubeMX plan without CubeMX or in a remote window still creates the folder, warns, and never launches', async () => {
   const req = request({ templateId: 'stm32.cubemx', device: { kind: 'stm32-board', id: 'NUCLEO-G071RB' }, framework: undefined });
   const missing = await planCreation(req, context({ template: template('stm32.cubemx'), tools: {} }));
-  assert.ok(!missing.steps.some(s => s.kind === 'launch-cubemx')); assert.match(missing.warnings[0], /not found/);
+  assert.ok(!missing.steps.some(s => s.kind === 'launch-cubemx')); assert.match(missing.warnings[0].message, /not found/); assert.equal(missing.warnings[0].code, 'no-cubemx');
   const remote = await planCreation(req, context({ template: template('stm32.cubemx'), remote: true }));
-  assert.ok(!remote.steps.some(s => s.kind === 'launch-cubemx')); assert.match(remote.warnings[0], /remote/);
+  assert.ok(!remote.steps.some(s => s.kind === 'launch-cubemx')); assert.match(remote.warnings[0].message, /remote/); assert.equal(remote.warnings[0].code, 'remote-cubemx');
 });
 
 test('importing an existing STM32 project only opens it, after checking it is one', async () => {

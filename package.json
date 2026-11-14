@@ -97,6 +97,11 @@
         "title": "Sakura Atelier: Reload PlatformIO Boards"
       },
       {
+        "command": "sakuraAtelier.newProject",
+        "title": "Sakura Atelier：新建项目",
+        "icon": "$(new-folder)"
+      },
+      {
         "command": "sakuraAtelier.selectConfiguration",
         "title": "Sakura Atelier: Select Configuration",
         "icon": "$(chevron-down)"
@@ -278,6 +283,12 @@
         {
           "command": "sakuraRunner.pythonTerminal",
           "when": "false"
+        }
+      ],
+      "file/newFile": [
+        {
+          "command": "sakuraAtelier.newProject",
+          "group": "file"
         }
       ]
     },

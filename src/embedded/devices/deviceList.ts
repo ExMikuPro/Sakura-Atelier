@@ -3,7 +3,7 @@ import type { FavoriteDevice } from './favorites';
 import type { RecentDevice } from './recents';
 import { ProviderStatus, searchDevices } from './provider';
 
-export const deviceSections = ['favorites', 'recent', 'pio-board', 'stm32-mcu', 'all'] as const;
+export const deviceSections = ['favorites', 'recent', 'pio-board', 'stm32-mcu', 'stm32-board', 'all'] as const;
 export type DeviceSection = typeof deviceSections[number];
 
 /** Why a device cannot be used right now. Favorites with a reason are still listed, never deleted. */
