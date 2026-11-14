@@ -9,7 +9,7 @@ import { createPlans } from './planner';
 import { Mode, RunnerError, Settings, supports, relevantTaskType } from './model';
 import { TaskExecutor } from './executor';
 import { AtelierController } from './controller';
-import { registerEmbeddedEditors } from './embedded/editors';
+import { initializeEmbeddedState, registerEmbeddedEditors } from './embedded/editors';
 let executor: TaskExecutor | undefined;
 let controller: AtelierController | undefined;
 export function activate(context: vscode.ExtensionContext): void {
@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext): void {
     register('stop',safe(()=>controller!.stop()));register('configure',safe(()=>controller!.openManager()));register('editConfigurations',safe(()=>controller!.openManager()));register('addConfiguration',safe(()=>controller!.openManager('configurations',true)));register('manageToolchains',safe(()=>controller!.openManager('toolchains')));register('sdkManager',safe(()=>controller!.openManager('sdk')));register('pythonTerminal',safe(()=>controller!.createPythonTerminal()));
     context.subscriptions.push(vscode.commands.registerCommand(`${namespace}.selectConfiguration`,(id?:string)=>safe(()=>controller!.selectConfiguration(id))()));
   }
-  try { registerEmbeddedEditors(context); } catch (error) { console.error('Sakura Atelier: embedded editors are unavailable.', error); }
+  try { initializeEmbeddedState(context); registerEmbeddedEditors(context); } catch (error) { console.error('Sakura Atelier: embedded editors are unavailable.', error); }
   // Embedded support is loaded on first use so activation stays unchanged.
   for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug'] as const){
     context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
