@@ -4,7 +4,7 @@ export const runtimeLanguages = [...languages, 'node'] as const;
 export type RuntimeLanguage = Language | 'node';
 export type ConfigurationKind = 'file' | 'project' | 'module' | 'executable' | 'task' | 'launch';
 export interface AtelierConfiguration {
-  id: string; name: string; language: RuntimeLanguage; kind: ConfigurationKind;
+  id: string; name: string; templateId: string; language: RuntimeLanguage; kind: ConfigurationKind;
   target: string; cwd: string; toolchain: string; args: string[]; buildArgs: string[];
   env: Record<string, string>; preLaunchTask: string; terminal: boolean; autoActivate: boolean;
   operation: 'run' | 'build' | 'test'; profile: 'debug' | 'release'; standard: string;
@@ -18,11 +18,11 @@ export interface ConfigurationFile { version: 1; default?: string; configuration
 export interface LocalToolchain { id: string; name: string; language: RuntimeLanguage; executable: string; version: string; manager: string; project: string; details?: string; rustToolchain?:string }
 export interface PreparedRun { plan: RunPlan; debug?: Record<string, unknown> }
 export type Selection = { kind: 'auto' | 'file' | 'project' | 'managed' | 'launch' | 'task' | 'test'; id?: string };
-const scalar = ['id','name','target','cwd','toolchain','preLaunchTask','standard','output','package','binary','example','rustToolchain','cargoTarget','script','framework','launchProfile','goToolchain','debugName','debugType'] as const;
+const scalar = ['id','name','templateId','target','cwd','toolchain','preLaunchTask','standard','output','package','binary','example','rustToolchain','cargoTarget','script','framework','launchProfile','goToolchain','debugName','debugType'] as const;
 const arrays = ['args','buildArgs','sources','includePaths','libraryPaths','linkArgs','features','classPath','modulePath'] as const;
 const fields = new Set<string>([...scalar, ...arrays, 'language','kind','env','terminal','autoActivate','operation','profile','packageManager','typescriptRunner']);
 export function newConfiguration(language: RuntimeLanguage, name = `${language} application`): AtelierConfiguration {
-  return { id: '', name, language, kind: 'file', target: '${file}', cwd: '${workspaceFolder}', toolchain: '', args: [], buildArgs: [], env: {}, preLaunchTask: '', terminal: true, autoActivate: true, operation: 'run', profile: 'debug', standard: '', sources: [], includePaths: [], libraryPaths: [], linkArgs: [], output: '', package: '', binary: '', example: '', features: [], rustToolchain: '', cargoTarget: '', packageManager: 'npm', script: '', typescriptRunner: 'tsx', framework: '', launchProfile: '', goToolchain: '', debugName: '', debugType: '', classPath: [], modulePath: [] };
+  return { id: '', name, templateId: '', language, kind: 'file', target: '${file}', cwd: '${workspaceFolder}', toolchain: '', args: [], buildArgs: [], env: {}, preLaunchTask: '', terminal: true, autoActivate: true, operation: 'run', profile: 'debug', standard: '', sources: [], includePaths: [], libraryPaths: [], linkArgs: [], output: '', package: '', binary: '', example: '', features: [], rustToolchain: '', cargoTarget: '', packageManager: 'npm', script: '', typescriptRunner: 'tsx', framework: '', launchProfile: '', goToolchain: '', debugName: '', debugType: '', classPath: [], modulePath: [] };
 }
 export function validateFile(value: unknown): ConfigurationFile {
   const fail = (text: string): never => { throw new RunnerError(`Configuration: ${text}`, true); };
@@ -84,4 +84,11 @@ export async function expand(value: string, variables: Variables): Promise<strin
     result = result.replace(match[0], () => replacement!);
   }
   return result;
+}
+
+/** Interactive editor validation is stricter than legacy file parsing; missing SDKs remain editable. */
+export function validateEditorFile(value:unknown):ConfigurationFile {
+  const document=validateFile(value);
+  for(const c of document.configurations){if(!c.target.trim()){throw new RunnerError('Target is required.',true);}if(c.templateId==='cargo.example'&&!c.example.trim()){throw new RunnerError('Choose a Cargo example.',true);}if(c.binary&&c.example){throw new RunnerError('Choose a Cargo binary or example, not both.',true);}if(c.language.startsWith('typescript')&&c.typescriptRunner==='tsc'&&!c.output.trim()){throw new RunnerError('Compiled JavaScript output is required for tsc.',true);}}
+  return document;
 }

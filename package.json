@@ -1,7 +1,7 @@
 {
   "name": "sakura-atelier",
   "displayName": "Sakura Atelier",
-  "description": "Unified project Run, Debug, configuration editor and cross-platform SDK Manager.",
+  "description": "%extension.description%",
   "version": "0.1.0",
   "publisher": "ExMikuPro",
   "license": "MIT",
@@ -19,7 +19,7 @@
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "Running code requires a trusted workspace.",
+      "description": "%trust.description%",
       "restrictedConfigurations": [
         "sakuraRunner.configurations",
         "sakuraRunner.pythonPath",
@@ -36,170 +36,230 @@
     "commands": [
       {
         "command": "sakuraAtelier.run",
-        "title": "Run with Sakura Atelier",
+        "title": "%command.sakuraAtelier.run%",
         "icon": "$(play)"
       },
       {
         "command": "sakuraAtelier.debug",
-        "title": "Debug with Sakura Atelier",
+        "title": "%command.sakuraAtelier.debug%",
         "icon": "$(debug-alt)"
       },
       {
         "command": "sakuraAtelier.embedded.manageTools",
-        "title": "Sakura Atelier: Embedded Tools..."
+        "title": "%command.sakuraAtelier.embedded.manageTools%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.selectEnvironment",
-        "title": "Sakura Atelier: PlatformIO: Select Environment..."
+        "title": "%command.sakuraAtelier.embedded.platformio.selectEnvironment%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.build",
-        "title": "Sakura Atelier: PlatformIO: Build"
+        "title": "%command.sakuraAtelier.embedded.platformio.build%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.clean",
-        "title": "Sakura Atelier: PlatformIO: Clean"
+        "title": "%command.sakuraAtelier.embedded.platformio.clean%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.upload",
-        "title": "Sakura Atelier: PlatformIO: Upload (writes firmware to the board)"
+        "title": "%command.sakuraAtelier.embedded.platformio.upload%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.debug",
-        "title": "Sakura Atelier: PlatformIO: Debug"
+        "title": "%command.sakuraAtelier.embedded.platformio.debug%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.monitor",
-        "title": "Sakura Atelier: PlatformIO: Serial Monitor"
+        "title": "%command.sakuraAtelier.embedded.platformio.monitor%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.test",
-        "title": "Sakura Atelier: PlatformIO: Test (build only on boards)"
+        "title": "%command.sakuraAtelier.embedded.platformio.test%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.testOnDevice",
-        "title": "Sakura Atelier: PlatformIO: Test on Device (writes firmware to the board)"
+        "title": "%command.sakuraAtelier.embedded.platformio.testOnDevice%"
       },
       {
         "command": "sakuraAtelier.embedded.stm32.build",
-        "title": "Sakura Atelier: STM32: Build"
+        "title": "%command.sakuraAtelier.embedded.stm32.build%"
       },
       {
         "command": "sakuraAtelier.embedded.stm32.flash",
-        "title": "Sakura Atelier: STM32: Flash (writes firmware to the board)"
+        "title": "%command.sakuraAtelier.embedded.stm32.flash%"
       },
       {
         "command": "sakuraAtelier.embedded.stm32.debug",
-        "title": "Sakura Atelier: STM32: Debug"
+        "title": "%command.sakuraAtelier.embedded.stm32.debug%"
       },
       {
         "command": "sakuraAtelier.selectConfiguration",
-        "title": "Sakura Atelier: Select Configuration",
+        "title": "%command.sakuraAtelier.selectConfiguration%",
         "icon": "$(chevron-down)"
       },
       {
         "command": "sakuraAtelier.stop",
-        "title": "Sakura Atelier: Stop",
+        "title": "%command.sakuraAtelier.stop%",
         "icon": "$(debug-stop)"
       },
       {
         "command": "sakuraAtelier.runFile",
-        "title": "Sakura Atelier: Run File",
+        "title": "%command.sakuraAtelier.runFile%",
         "icon": "$(play)"
       },
       {
         "command": "sakuraAtelier.runProject",
-        "title": "Sakura Atelier: Run Project",
+        "title": "%command.sakuraAtelier.runProject%",
         "icon": "$(play)"
       },
       {
         "command": "sakuraAtelier.configure",
-        "title": "Sakura Atelier: Open Configuration Manager",
+        "title": "%command.sakuraAtelier.configure%",
         "icon": "$(settings-gear)"
       },
       {
         "command": "sakuraAtelier.editConfigurations",
-        "title": "Sakura Atelier: Edit Configurations...",
+        "title": "%command.sakuraAtelier.editConfigurations%",
         "icon": "$(settings-gear)"
       },
       {
         "command": "sakuraAtelier.addConfiguration",
-        "title": "Sakura Atelier: Add Configuration...",
+        "title": "%command.sakuraAtelier.addConfiguration%",
         "icon": "$(add)"
       },
       {
         "command": "sakuraAtelier.manageToolchains",
-        "title": "Sakura Atelier: Manage Toolchains...",
+        "title": "%command.sakuraAtelier.manageToolchains%",
         "icon": "$(tools)"
       },
       {
         "command": "sakuraAtelier.sdkManager",
-        "title": "Sakura Atelier: SDK Manager",
+        "title": "%command.sakuraAtelier.sdkManager%",
         "icon": "$(package)"
       },
       {
         "command": "sakuraAtelier.pythonTerminal",
-        "title": "Sakura Atelier: Open Python Environment Terminal",
+        "title": "%command.sakuraAtelier.pythonTerminal%",
         "icon": "$(terminal)"
       },
       {
         "command": "sakuraRunner.run",
-        "title": "Run with Sakura Atelier (Legacy Alias)",
+        "title": "%command.sakuraRunner.run%",
         "icon": "$(play)"
       },
       {
         "command": "sakuraRunner.debug",
-        "title": "Debug with Sakura Atelier (Legacy Alias)",
+        "title": "%command.sakuraRunner.debug%",
         "icon": "$(debug-alt)"
       },
       {
         "command": "sakuraRunner.selectConfiguration",
-        "title": "Sakura Atelier: Select Configuration (Legacy Alias)",
+        "title": "%command.sakuraRunner.selectConfiguration%",
         "icon": "$(chevron-down)"
       },
       {
         "command": "sakuraRunner.stop",
-        "title": "Sakura Atelier: Stop (Legacy Alias)",
+        "title": "%command.sakuraRunner.stop%",
         "icon": "$(debug-stop)"
       },
       {
         "command": "sakuraRunner.runFile",
-        "title": "Sakura Atelier: Run File (Legacy Alias)",
+        "title": "%command.sakuraRunner.runFile%",
         "icon": "$(play)"
       },
       {
         "command": "sakuraRunner.runProject",
-        "title": "Sakura Atelier: Run Project (Legacy Alias)",
+        "title": "%command.sakuraRunner.runProject%",
         "icon": "$(play)"
       },
       {
         "command": "sakuraRunner.configure",
-        "title": "Sakura Atelier: Open Configuration Manager (Legacy Alias)",
+        "title": "%command.sakuraRunner.configure%",
         "icon": "$(settings-gear)"
       },
       {
         "command": "sakuraRunner.editConfigurations",
-        "title": "Sakura Atelier: Edit Configurations... (Legacy Alias)",
+        "title": "%command.sakuraRunner.editConfigurations%",
         "icon": "$(settings-gear)"
       },
       {
         "command": "sakuraRunner.addConfiguration",
-        "title": "Sakura Atelier: Add Configuration... (Legacy Alias)",
+        "title": "%command.sakuraRunner.addConfiguration%",
         "icon": "$(add)"
       },
       {
         "command": "sakuraRunner.manageToolchains",
-        "title": "Sakura Atelier: Manage Toolchains... (Legacy Alias)",
+        "title": "%command.sakuraRunner.manageToolchains%",
         "icon": "$(tools)"
       },
       {
         "command": "sakuraRunner.sdkManager",
-        "title": "Sakura Atelier: SDK Manager (Legacy Alias)",
+        "title": "%command.sakuraRunner.sdkManager%",
         "icon": "$(package)"
       },
       {
         "command": "sakuraRunner.pythonTerminal",
-        "title": "Sakura Atelier: Open Python Environment Terminal (Legacy Alias)",
+        "title": "%command.sakuraRunner.pythonTerminal%",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "sakuraAtelier.english.run",
+        "title": "%english.run%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraAtelier.english.debug",
+        "title": "%english.debug%",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "sakuraAtelier.english.selectConfiguration",
+        "title": "%english.selectConfiguration%",
+        "icon": "$(chevron-down)"
+      },
+      {
+        "command": "sakuraAtelier.english.stop",
+        "title": "%english.stop%",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "sakuraAtelier.english.runFile",
+        "title": "%english.runFile%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraAtelier.english.runProject",
+        "title": "%english.runProject%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraAtelier.english.configure",
+        "title": "%english.configure%",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "sakuraAtelier.english.editConfigurations",
+        "title": "%english.editConfigurations%",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "sakuraAtelier.english.addConfiguration",
+        "title": "%english.addConfiguration%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "sakuraAtelier.english.manageToolchains",
+        "title": "%english.manageToolchains%",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "sakuraAtelier.english.sdkManager",
+        "title": "%english.sdkManager%",
+        "icon": "$(package)"
+      },
+      {
+        "command": "sakuraAtelier.english.pythonTerminal",
+        "title": "%english.pythonTerminal%",
         "icon": "$(terminal)"
       }
     ],
@@ -207,22 +267,42 @@
       "editor/title": [
         {
           "command": "sakuraAtelier.run",
-          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish",
           "group": "navigation@1"
         },
         {
           "command": "sakuraAtelier.debug",
-          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish",
           "group": "navigation@2"
         },
         {
           "command": "sakuraAtelier.selectConfiguration",
-          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish",
           "group": "navigation@3"
         },
         {
           "command": "sakuraAtelier.stop",
-          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)) && !sakuraAtelier.uiEnglish",
+          "group": "navigation@4"
+        },
+        {
+          "command": "sakuraAtelier.english.run",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sakuraAtelier.english.debug",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sakuraAtelier.english.selectConfiguration",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sakuraAtelier.english.stop",
+          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)) && sakuraAtelier.uiEnglish",
           "group": "navigation@4"
         }
       ],
@@ -274,6 +354,102 @@
         {
           "command": "sakuraRunner.pythonTerminal",
           "when": "false"
+        },
+        {
+          "command": "sakuraAtelier.run",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.debug",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.selectConfiguration",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.stop",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.runFile",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.runProject",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.configure",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.editConfigurations",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.addConfiguration",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.manageToolchains",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.sdkManager",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.pythonTerminal",
+          "when": "!sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.run",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.debug",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.selectConfiguration",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.stop",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.runFile",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.runProject",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.configure",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.editConfigurations",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.addConfiguration",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.manageToolchains",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.sdkManager",
+          "when": "sakuraAtelier.uiEnglish"
+        },
+        {
+          "command": "sakuraAtelier.english.pythonTerminal",
+          "when": "sakuraAtelier.uiEnglish"
         }
       ]
     },
@@ -288,42 +464,42 @@
             "project"
           ],
           "enumDescriptions": [
-            "Prefer a project; fall back only when none is detected.",
-            "Always run the active file.",
-            "Require a project."
+            "%enum.sakuraRunner.defaultMode.0%",
+            "%enum.sakuraRunner.defaultMode.1%",
+            "%enum.sakuraRunner.defaultMode.2%"
           ],
           "default": "auto",
-          "description": "Default run mode."
+          "description": "%setting.sakuraRunner.defaultMode%"
         },
         "sakuraRunner.script": {
           "type": "string",
           "default": "",
-          "description": "Preferred package.json script. Empty offers start, dev and run scripts."
+          "description": "%setting.sakuraRunner.script%"
         },
         "sakuraRunner.projectTask": {
           "type": "string",
           "default": "",
-          "description": "Existing VS Code task label to run for this project (for example CMake or Java)."
+          "description": "%setting.sakuraRunner.projectTask%"
         },
         "sakuraRunner.pythonPath": {
           "type": "string",
           "default": "",
-          "description": "Python interpreter executable. Empty uses the Python extension, project venv, then PATH."
+          "description": "%setting.sakuraRunner.pythonPath%"
         },
         "sakuraRunner.cCompiler": {
           "type": "string",
           "default": "",
-          "description": "C compiler executable; defaults to gcc or clang."
+          "description": "%setting.sakuraRunner.cCompiler%"
         },
         "sakuraRunner.cppCompiler": {
           "type": "string",
           "default": "",
-          "description": "C++ compiler executable; defaults to g++ or clang++."
+          "description": "%setting.sakuraRunner.cppCompiler%"
         },
         "sakuraRunner.configurations": {
           "type": "array",
           "default": [],
-          "description": "Explicit project commands. Executables and arguments are separate; no shell expansion. Variables: ${file}, ${projectDir}, ${workspaceFolder}. Relative executables containing a slash resolve from the project directory. For Windows .cmd wrappers use an existing VS Code task.",
+          "description": "%setting.sakuraRunner.configurations%",
           "items": {
             "type": "object",
             "required": [
@@ -370,17 +546,32 @@
         "sakuraRunner.javaPath": {
           "type": "string",
           "default": "",
-          "description": "Java executable. Empty uses JAVA_HOME/bin/java, then PATH. Requires JDK 11+ for source files."
+          "description": "%setting.sakuraRunner.javaPath%"
         },
         "sakuraRunner.python.autoActivateTerminal": {
           "type": "boolean",
           "default": true,
-          "description": "Activate newly created Sakura Atelier Python terminals through the official Python environment manager when available. Does not change official settings or existing terminals."
+          "description": "%setting.sakuraRunner.python.autoActivateTerminal%"
         },
         "sakuraAtelier.python.autoActivateTerminal": {
           "type": "boolean",
           "default": true,
-          "description": "Activate newly created Sakura Atelier Python terminals through the official Python environment manager when available. Does not change official settings or existing terminals."
+          "description": "%setting.sakuraAtelier.python.autoActivateTerminal%"
+        },
+        "sakuraAtelier.language": {
+          "type": "string",
+          "enum": [
+            "zh-cn",
+            "auto",
+            "en"
+          ],
+          "default": "zh-cn",
+          "enumDescriptions": [
+            "%enum.sakuraAtelier.language.0%",
+            "%enum.sakuraAtelier.language.1%",
+            "%enum.sakuraAtelier.language.2%"
+          ],
+          "description": "%setting.sakuraAtelier.language%"
         }
       }
     },
@@ -401,7 +592,7 @@
         "properties": {
           "sakuraId": {
             "type": "string",
-            "description": "Unique identity for a concrete Sakura Atelier task execution."
+            "description": "%task.sakuraId%"
           }
         }
       }
@@ -412,9 +603,11 @@
     "lint": "eslint src test scripts",
     "test": "npm run compile && npm run lint && node --test out/test/*.test.js",
     "test:integration": "npm run compile && node scripts/integration.cjs",
-    "package": "npm run compile && vsce package --no-dependencies --allow-missing-repository --out sakura-atelier-0.1.0.vsix"
+    "package": "npm run compile && vsce package --no-dependencies --allow-missing-repository --out sakura-atelier-0.1.0.vsix",
+    "test:ui": "npm run compile && playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@types/node": "^18.19.0",
     "@types/vscode": "1.85.0",
     "@vscode/codicons": "^0.0.46-24",
@@ -429,5 +622,6 @@
   },
   "activationEvents": [
     "onStartupFinished"
-  ]
+  ],
+  "icon": "media/icon.png"
 }
