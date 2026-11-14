@@ -84,3 +84,10 @@ Browser 插件未提供，界面自动化按 frontend-testing-debugging 工作�
 ## 打包
 
 `npm run package` 生成本地 `sakura-atelier-0.1.0.vsix`。包括运行时代码、schema、本地化资源、设置页面、官方 Codicons 和用户提供的 PNG 图标；排除开发依赖、测试、截图、测试应用、用户设置与缓存。检查包内 ID / 版本 / 最低 API 与全部 Webview 脚本。不会发布 Marketplace、创建 Release 或自动合并 PR。
+
+## 本轮 macOS 优先 CI
+
+自动 CI 仅在 `macos-latest` 上运行编译、ESLint、全部单元测试、Extension Host 集成测试和 VSIX 打包；不自动发布。纯 Windows/Linux 路径与平台规则单元测试继续保留。主要验收平台为 Apple Silicon；macOS x86_64 需另行实测。
+
+Windows 与 Linux 原生支持验证暂缓，现有跨平台实现保留。Windows Extension Host 已知存在 JDK source launcher、C 编译失败及进程卸载测试挂起的问题，尚未修复或验证通过。取消自动原生任务不代表这些问题已解决。WSL、SSH 与 Dev Containers 保留架构，尚未实机验收。
+
