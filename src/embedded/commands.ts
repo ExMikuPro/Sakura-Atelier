@@ -93,7 +93,7 @@ async function pickPort(pio: string | undefined, root: string): Promise<string |
   return picked.port;
 }
 
-async function execute(plan: EmbeddedPlan, folder: vscode.WorkspaceFolder, executor: TaskExecutor, debug: DebugService): Promise<void> {
+export async function executeEmbeddedPlan(plan: EmbeddedPlan, folder: vscode.WorkspaceFolder, executor: TaskExecutor, debug: DebugService): Promise<void> {
   if (plan.blockers.length) { throw new RunnerError(plan.blockers.join(' '), true); }
   if (plan.risk === 'writes-device' && await vscode.window.showWarningMessage(plan.confirm ?? 'This writes to a device. Continue?', { modal: true }, 'Continue') !== 'Continue') { return; }
   if (plan.debug && !vscode.extensions.getExtension(plan.debug.extension)) { throw new RunnerError(`Install ${plan.debug.extension} to debug.`); }
@@ -120,7 +120,7 @@ async function platformio(name: string, context: vscode.ExtensionContext, execut
   }
   const port = operation === 'monitor' || operation === 'upload' || operation === 'testOnDevice' ? await pickPort(pio, project.root) : undefined;
   const plan = buildPlatformioPlan({ operation, pio, project, env, port, metadata, ideExtensionInstalled: !!vscode.extensions.getExtension(platformioIdeExtension), remote: !!vscode.env.remoteName });
-  await execute(plan, folder, executor, debug);
+  await executeEmbeddedPlan(plan, folder, executor, debug);
 }
 
 async function toolPaths(context: vscode.ExtensionContext): Promise<ToolPaths> {
@@ -154,7 +154,7 @@ async function stm32(name: string, context: vscode.ExtensionContext, executor: T
   if (operation === 'flash') { flash = await pickFlashTarget(project); if (!flash) { return; } }
   if (operation === 'debug' && !project.ioc?.info.mcu) { device = await vscode.window.showInputBox({ title: 'Target MCU', prompt: 'The MCU is not stated in a .ioc file. Enter it explicitly.' }); if (!device) { return; } }
   const plan = buildStm32Plan({ operation, project, tools, preset, flash, device, cortexDebugInstalled: !!vscode.extensions.getExtension('marus25.cortex-debug'), remote: !!vscode.env.remoteName });
-  await execute(plan, folder, executor);
+  await executeEmbeddedPlan(plan, folder, executor, debug);
 }
 
 export async function runEmbeddedCommand(name: EmbeddedCommandName, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
