@@ -69,7 +69,13 @@ test('CMake and Java projects require an explicit project entry', () => fixture(
   for (const language of ['cpp', 'java'] as const) { await assert.rejects(createPlans(context(dir, { language, project: { root: dir, marker: language === 'cpp' ? 'CMakeLists.txt' : 'pom.xml' } })), /detected.*task/); }
 }));
 test('Java single file uses source launcher; C# does not invent a project', () => fixture(async dir => {
-  const java = (await createPlans(context(dir, { language: 'java', mode: 'file', file: path.join(dir, 'Main.java') })))[0]; assert.equal(java.steps[0].command, 'java'); assert.deepEqual(java.steps[0].args, [path.join(dir, 'Main.java')]);
+  // JAVA_HOME is honoured by the planner, so isolate the PATH-default case from the host environment.
+  const savedJavaHome = process.env.JAVA_HOME; delete process.env.JAVA_HOME;
+  try {
+    const java = (await createPlans(context(dir, { language: 'java', mode: 'file', file: path.join(dir, 'Main.java') })))[0]; assert.equal(java.steps[0].command, 'java'); assert.deepEqual(java.steps[0].args, [path.join(dir, 'Main.java')]);
+    process.env.JAVA_HOME = path.join(dir, 'jdk');
+    const home = (await createPlans(context(dir, { language: 'java', mode: 'file', file: path.join(dir, 'Main.java') })))[0]; assert.equal(home.steps[0].command, path.join(dir, 'jdk', 'bin', process.platform === 'win32' ? 'java.exe' : 'java'));
+  } finally { if (savedJavaHome === undefined) { delete process.env.JAVA_HOME; } else { process.env.JAVA_HOME = savedJavaHome; } }
   await assert.rejects(createPlans(context(dir, { language: 'csharp' })), /requires a .csproj/);
 }));
 test('C# and Cargo offer multiple targets', () => fixture(async dir => {

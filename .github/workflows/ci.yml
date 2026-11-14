@@ -49,6 +49,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
       - run: npm ci
       - name: Run integration tests (Linux, under xvfb)
         if: runner.os == 'Linux'
