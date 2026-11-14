@@ -1,4 +1,6 @@
 import { hostToolchains } from './environment/registryAccess';
+import { t } from './i18n';
+import { ui } from './ui';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import { PackageManagerAdapter,PackageSummary,PackageDetails,platformManager,HomebrewAdapter,AptAdapter,WingetAdapter } from './packageManagers';
@@ -35,12 +37,13 @@ export class SdkManager implements vscode.Disposable{
     if(current.id!==previous.id||current.source!==previous.source||current.kind!==previous.kind){throw new RunnerError('Package identity/source changed. Refresh and confirm the new source first.');}
     const {step,admin}=await adapter.installPlan(current,version,cwd);
     const command=[step.command,...step.args].map(arg=>JSON.stringify(arg)).join(' ');
-    const target=`目标环境：${this.host?.environment.label??'当前扩展宿主'} · ${process.platform}/${process.arch}`;
-    const scope=this.host?.environment.kind==='container'?'当前容器内部，不修改容器宿主':'当前目标宿主';
-    const permission=typeof process.getuid==='function'&&process.getuid()===0?'root':'由系统权限机制确认';
-    const accepted=await vscode.window.showWarningMessage(`${target}\n安装范围：${scope}\n权限：${permission}\n安装：${current.name} ${version}\n来源：${current.source}\n${command}\n${admin?'管理员权限将通过终端中的 sudo 请求。 ':''}${adapter.kind==='brew'?'Homebrew formula 使用 --skip-link，禁用自动清理与依赖升级。 ':''}保留包管理器的权限和许可证交互确认。`,{modal:true},'安装');
-    if(accepted!=='安装'){return {cancelled:true};}this.host?.assert();
-    const started=await this.installer.exclusive(()=>this.installer.run({name:`安装 ${current.name}`,steps:[step]}));
+    const message=[t('Install {0} {1}',current.name,version),t('Source: {0}',current.source),command,admin?t('Administrator permission will be requested by sudo in the terminal.'):'',adapter.kind==='brew'?t('Homebrew formulae use --skip-link; automatic cleanup and dependent upgrades are disabled.'):'',t('Package-manager permission and license prompts remain interactive.')].filter(Boolean).join('\n');
+    const target=t('Target host: {0} · {1}/{2}',this.host?.environment.label??'Extension Host',process.platform,process.arch);
+    const scope=t('Installation scope: {0}',this.host?.environment.kind==='container'?t('Current container only'):t('Current target host'));
+    const permission=t('Privileges: {0}',typeof process.getuid==='function'&&process.getuid()===0?'root':t('Confirmed by the system in the terminal'));
+    const accepted=await ui.showWarningMessage([target,scope,permission,message].join('\n'),{modal:true},'Install');
+    if(accepted!=='Install'){return {cancelled:true};}this.host?.assert();
+    const started=await this.installer.exclusive(()=>this.installer.run({name:`Install ${current.name}`,steps:[step]}));
     if(!started){throw new RunnerError('Another SDK installation is already running.');}
     this.verified.clear();let installed:PackageDetails|undefined;try{installed=await adapter.details(current);}catch{/* Refresh PATH SDKs even if metadata lookup is temporarily offline. */}try{await this.refreshed(installed);}catch(error){throw new RunnerError(`SDK installation completed, but toolchain refresh failed: ${error instanceof Error?error.message:String(error)}. Use Refresh or Locate Existing SDK.`,true);}return {cancelled:false};
   }

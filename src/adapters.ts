@@ -3,25 +3,15 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { AtelierConfiguration as Configuration, RuntimeLanguage, runtimeLanguages, LocalToolchain, newConfiguration, PreparedRun } from './configuration';
+import { AtelierConfiguration as Configuration, RuntimeLanguage, runtimeLanguages, newConfiguration, PreparedRun } from './configuration';
 import { Step, RunnerError } from './model';
 import { contained, exists, readProjectFile } from './detect';
 import { firstTool, resolveTool } from './tools';
 import { ToolchainDiscovery, query } from './toolchains';
 import { ProjectRecord } from './projects';
-export interface AdapterContext { folder: vscode.WorkspaceFolder; root: string; file: string; cache: string; environment: Record<string,string>; toolchain: string }
-export interface DebugPlan { configuration: vscode.DebugConfiguration; build: Step[]; artifactFile?: string }
-export interface RuntimeAdapter {
-  readonly language: RuntimeLanguage; readonly runtime: string;
-  detectProjects(projects: ProjectRecord[]): ProjectRecord[];
-  discoverToolchains(discovery: ToolchainDiscovery, folder: vscode.WorkspaceFolder): Promise<LocalToolchain[]>;
-  detectRunTargets(context: AdapterContext): Promise<Configuration[]>;
-  proposeConfigurations(context: AdapterContext): Promise<Configuration[]>;
-  validateConfiguration(configuration: Configuration): void;
-  buildRunPlan(configuration: Configuration, context: AdapterContext): Promise<PreparedRun>;
-  buildDebugPlan(configuration: Configuration, context: AdapterContext, adapterType: string): Promise<DebugPlan>;
-  resolveTerminalEnvironment(configuration: Configuration, context: AdapterContext): Record<string,string>;
-}
+import type { AdapterContext, DebugPlan, RuntimeAdapter } from './adapterTypes';
+import { AdapterRegistry, registerBuiltinDescriptors } from './adapterRegistry';
+export type { AdapterContext, DebugPlan, RuntimeAdapter } from './adapterTypes';
 function resolveFrom(cwd: string, value: string): string { return path.isAbsolute(value) ? value : path.resolve(cwd, value); }
 async function localFile(root: string, relative: string): Promise<string | undefined> {
   const directory = root;
@@ -219,7 +209,7 @@ async function propose(language: RuntimeLanguage, ctx: AdapterContext): Promise<
   }
   return configs;
 }
-export const adapters = new Map<RuntimeLanguage, RuntimeAdapter>(runtimeLanguages.map(language => [language, {
+function createAdapter(language: RuntimeLanguage): RuntimeAdapter { return {
   language, runtime: ['javascript','javascriptreact','typescript','typescriptreact','node'].includes(language) ? 'node' : language,
   detectProjects: (projects: ProjectRecord[]) => projects.filter(p => p.languages.includes(language)),
   discoverToolchains: (discovery: ToolchainDiscovery, folder: vscode.WorkspaceFolder) => discovery.discover(language, folder),
@@ -242,4 +232,10 @@ export const adapters = new Map<RuntimeLanguage, RuntimeAdapter>(runtimeLanguage
     if(context.toolchain){const key=process.platform==='win32'?'Path':'PATH';const current=Object.entries(context.environment).find(([name])=>process.platform==='win32'?name.toLowerCase()==='path':name==='PATH')?.[1]||process.env[key]||process.env.PATH||'';if(process.platform==='win32'){for(const name of Object.keys(environment)){if(name.toLowerCase()==='path'){delete environment[name];}}}environment[key]=[path.dirname(context.toolchain),current].join(path.delimiter);if(language==='csharp'&&!environment.DOTNET_ROOT){environment.DOTNET_ROOT=path.dirname(context.toolchain);}}
     return environment;
   }
-}]));
+}; }
+/** Single registry for languages, build systems, run targets and project backends. */
+export const adapterRegistry = new AdapterRegistry();
+registerBuiltinDescriptors(adapterRegistry);
+for (const language of runtimeLanguages) { adapterRegistry.languages.register(language, createAdapter(language)); }
+/** Language adapters keyed by language; kept for existing callers. */
+export const adapters = adapterRegistry.languages;

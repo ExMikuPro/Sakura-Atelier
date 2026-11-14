@@ -5,6 +5,7 @@
 !CHANGELOG.md
 !TESTING.md
 !out/src/*.js
+!out/src/**/*.js
 out/test/**
 node_modules/**
 .test-output/**
@@ -14,4 +15,5 @@ node_modules/**
 !media/*.js
 !media/*.ttf
 !media/*LICENSE.txt
-!out/src/environment/*.js
+!media/icon.png
+!package.nls*.json
