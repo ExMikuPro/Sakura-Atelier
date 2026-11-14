@@ -1,4 +1,5 @@
 import type { RuntimeLanguage } from './configuration';
+import type { ProjectTemplate } from './embedded/projects/template';
 import type { BackendHost, BackendProject, BuildSystemDescriptor, ProjectBackend, RunTargetDescriptor, RuntimeAdapter } from './adapterTypes';
 
 /** Small keyed registry with duplicate protection. Read access mirrors `Map` so existing `adapters.get(...)` callers keep working. */
@@ -23,6 +24,8 @@ export class AdapterRegistry {
   readonly buildSystems = new Registry<string, BuildSystemDescriptor>('Build system');
   readonly runTargets = new Registry<string, RunTargetDescriptor>('Run target');
   readonly backends = new Registry<string, ProjectBackend>('Project backend');
+  /** Templates for creating new embedded projects. */
+  readonly projectTemplates = new Registry<string, ProjectTemplate>('Project template');
 
   /** Runs every backend's metadata-only detection for one directory. A failing backend never hides the others. */
   async detectBackendProjects(root: string, host: BackendHost): Promise<BackendProject[]> {
