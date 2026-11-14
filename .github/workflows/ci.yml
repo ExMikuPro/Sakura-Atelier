@@ -35,10 +35,11 @@ jobs:
   integration:
     name: Integration tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,6 +60,30 @@ jobs:
       - name: Run integration tests
         if: runner.os != 'Linux'
         run: npm run test:integration
+
+  # Kept separate on purpose: the VS Code extension-host suite does not pass on
+  # Windows yet (JDK source launch and C compile tests fail, and the process
+  # deactivation test hangs). The failures are real and are not masked; see the
+  # pull request description. Remove this job's separation once they are fixed.
+  integration-windows-known-failing:
+    name: Integration tests (windows-latest, known failing)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: npm ci
+      - run: npm run test:integration
 
   package:
     name: Package VSIX
