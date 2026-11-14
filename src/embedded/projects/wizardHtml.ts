@@ -121,6 +121,7 @@ function renderList() {
       el('button', { class: 'star', type: 'button', 'aria-pressed': r.favorite, 'aria-label': r.favorite ? L('Remove from favorites') : L('Add to favorites'), title: r.favorite ? L('Remove from favorites') : L('Add to favorites'), on: { click: () => send({ type: 'toggleFavorite', ref: { kind: r.kind, id: r.id }, name: r.name }) } }, icon(r.favorite ? 'star-full' : 'star-empty'))));
   }
   const foot = document.getElementById('listfoot'); foot.replaceChildren();
+  if (view.catalogNote) foot.append(el('p', { class: 'sub' }, view.catalogNote));
   const actions = el('div', { class: 'inline' }, el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'reload' }) } }, icon('refresh'), ' ' + L('Reload devices')));
   if (view.hasRecents) actions.append(el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'clearRecents' }) } }, L('Clear recent devices')));
   foot.append(actions);

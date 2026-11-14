@@ -45,7 +45,7 @@ Sakura Atelier 为 PlatformIO 和 STM32 项目提供统一入口。实际的构�
 ## 器件数据来源
 
 - **PlatformIO 开发板**：来自官方 `pio boards --json-output`，不内置开发板清单。结果缓存在全局存储中（7 天），过期后先显示缓存并在后台刷新，失败时保留旧列表。命令 **Sakura Atelier: Reload PlatformIO Boards** 可手动重新加载。
-- **STM32 MCU 与开发板**：ST 没有公开、稳定的 MCU 枚举接口，因此不内置、也不猜测型号列表。数据来自打开的工作区里的 `.ioc` 文件，以及你手动输入的合法型号。详见 `docs/stm32-device-data.md`。
+- **STM32 MCU 与开发板**：读取本机 STM32CubeMX 的器件数据库，并合并工作区 `.ioc` 文件及手动输入的型号。自定义安装路径请先在“嵌入式工具”中定位 CubeMX，再点击“重新加载器件”。数据库布局不兼容时保留 `.ioc` 和手动输入。详见 `docs/stm32-device-data.md`。
 
 ## 嵌入式工具
 

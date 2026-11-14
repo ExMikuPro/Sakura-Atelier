@@ -5,6 +5,7 @@ import { BoardCache, BoardCacheEntry, PioBoardProvider } from './pioBoards';
 import { DeviceCatalog } from './provider';
 import { createToolRegistry } from '../toolsCommand';
 import { nodeRunner } from '../process';
+import { CubeMxDeviceProvider } from './cubeMxDevices';
 
 /** Board list cache in the extension's global storage on the machine that runs the extension (the remote host in SSH, WSL and Dev Containers). */
 export class FileBoardCache implements BoardCache {
@@ -27,6 +28,7 @@ let catalog: DeviceCatalog | undefined;
 /** One catalog per extension host. Providers are listed here; adding another platform means adding one provider. */
 export function deviceCatalog(context: vscode.ExtensionContext): DeviceCatalog {
   catalog ??= new DeviceCatalog([
+    new CubeMxDeviceProvider(() => createToolRegistry(context).resolve('stm32cubemx')),
     new PioBoardProvider({
       resolvePio: () => createToolRegistry(context).resolve('platformio'),
       run: nodeRunner, cwd: context.globalStorageUri.fsPath,

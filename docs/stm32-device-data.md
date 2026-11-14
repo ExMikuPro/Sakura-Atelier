@@ -10,17 +10,12 @@ Sakura Atelier models STM32 devices separately from PlatformIO boards:
 
 The three never convert into each other by guessing. A project that needs a PlatformIO board must be given one explicitly.
 
-## What the official tools provide
+## Local data sources
 
-No documented, stable ST interface enumerates STM32 MCUs or boards:
+1. Reads names from your installed STM32CubeMX: `db/mcu/families.xml` for MCUs and `db/plugins/boardmanager/*.pdsc` for boards. Board-to-MCU links use explicit `mountedDevice` records. The database stays on your machine and is never included in the extension package.
+2. Lists MCUs and boards named by `.ioc` files in the open workspaces. An MCU and a board are linked only when the same `.ioc` states both.
+3. Accepts a part number or board name you type, only when it has the right shape. Star it once and it is kept in your favorites.
 
-- STM32CubeMX keeps an internal database in its install folder. Its layout is private and version dependent, so Sakura Atelier does not read it.
-- STM32CubeProgrammer, STM32CubeCLT and the Arm GNU Toolchain have no list command for parts.
+CubeMX's installation layout is version dependent, not a stable public API. Unsupported or absent files fall back to workspace records and manual entry; no chip parameters are inferred. XML is read as text with bounded file sizes, without entity expansion or network access. Device search uses the in-memory catalog rather than rereading the database.
 
-So Sakura Atelier does not ship, guess or invent an MCU list or chip parameters.
-
-## What it does instead
-
-1. Lists MCUs and boards named by `.ioc` files in the open workspaces (written by STM32CubeMX). An MCU and a board are linked only when the same `.ioc` states both.
-2. Accepts a part number or board name you type, only when it has the right shape. Star it once and it is kept in your favorites.
-3. Takes more sources through the `DeviceProvider` interface (`DeviceCatalog.add`): a vendor database for another MCU family, or ST data if ST documents an interface.
+On macOS, discovery includes `/Applications/STMicroelectronics/STM32CubeMX.app`. For a custom installation use **Embedded Tools → STM32CubeMX → Locate…**, then **Reload devices** in the new-project wizard. Use the **STM32 MCU**, **STM32 boards**, or **All devices** tab to browse beyond favorites.

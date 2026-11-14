@@ -8,10 +8,9 @@ import { parseIoc } from '../stm32/ioc';
  * STM32 devices, modelled apart from PlatformIO boards.
  *
  * Data sources and their limits
- * - ST publishes no documented, stable command or API that lists STM32 MCUs or boards. STM32CubeMX keeps an internal database
- *   under its install folder; that layout is private and version dependent, so it is deliberately not read here.
- *   STM32CubeProgrammer and the Arm tools offer no enumeration either.
- * - Sakura Atelier therefore does not ship, guess or invent an MCU list or chip parameters. Verifiable sources only:
+ * - The optional CubeMxDeviceProvider reads names from the user's local CubeMX database.
+ *   That layout is version dependent; unsupported layouts fall back to the sources below.
+ * - This module does not ship, guess or invent an MCU list or chip parameters. Its sources are:
  *   1. MCUs and boards named by `.ioc` files in the user's own workspace (written by STM32CubeMX), and
  *   2. names the user types, accepted only when they have the shape of an STM32 part or ST board (see `parseManualDevice`).
  *      Favorites keep such names, so a typed MCU can be starred once and reused.

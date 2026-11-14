@@ -2,6 +2,8 @@ import { embeddedChinese, UiLanguage } from '../strings';
 
 /** Chinese text for the project wizard. Same English-key convention as the shared dictionary of PR #1. */
 export const wizardChinese: Record<string, string> = {
+  'STM32 devices come from your local STM32CubeMX database and workspace .ioc files.': 'STM32 器件来自本机 STM32CubeMX 数据库和工作区 .ioc 文件。',
+  'No STM32 devices loaded. Locate STM32CubeMX, then reload devices, or enter a part number manually.': '尚未加载 STM32 器件。请定位 STM32CubeMX 后点击“重新加载器件”，也可以手动添加型号。',
   'Empty project': '空项目',
   'Create an empty folder without source files, dependencies or run configurations.': '仅创建空文件夹，不生成源码、依赖或运行配置。',
   'No files will be created.': '不生成任何文件。',

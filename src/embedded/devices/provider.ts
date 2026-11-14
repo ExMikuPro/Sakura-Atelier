@@ -1,4 +1,4 @@
-import type { DeviceInfo, DeviceKind } from './model';
+import { deviceKey, DeviceInfo, DeviceKind } from './model';
 
 export type ProviderStatus =
   | { state: 'ready'; stale?: boolean; note?: string }
@@ -56,6 +56,6 @@ export class DeviceCatalog {
       for (const kind of provider.kinds) { status.set(kind, result?.status ?? { state: 'unavailable', reason: 'cli-failed', detail: 'not loaded' }); }
       devices.push(...(result?.devices ?? []));
     }
-    return { devices, status };
+    return { devices: [...new Map(devices.map(device => [deviceKey(device), device])).values()], status };
   }
 }

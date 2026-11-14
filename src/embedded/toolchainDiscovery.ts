@@ -45,7 +45,7 @@ const specs: Record<EmbeddedToolId, ToolSpec> = {
     label: 'STM32CubeMX', names: () => ['STM32CubeMX'],
     async hints(host) {
       const p = pathApi(host.platform);
-      if (host.platform === 'darwin') { return ['/Applications/STM32CubeMX.app/Contents/MacOS', p.join(host.home, 'Applications/STM32CubeMX.app/Contents/MacOS')]; }
+      if (host.platform === 'darwin') { return ['/Applications/STMicroelectronics/STM32CubeMX.app/Contents/MacOS', '/Applications/STM32CubeMX.app/Contents/MacOS', p.join(host.home, 'Applications/STMicroelectronics/STM32CubeMX.app/Contents/MacOS'), p.join(host.home, 'Applications/STM32CubeMX.app/Contents/MacOS')]; }
       if (host.platform === 'win32') {
         const roots = [host.env.ProgramFiles, host.env['ProgramFiles(x86)'], host.env.ProgramW6432].filter((r): r is string => !!r);
         return roots.map(r => p.join(r, 'STMicroelectronics', 'STM32Cube', 'STM32CubeMX'));

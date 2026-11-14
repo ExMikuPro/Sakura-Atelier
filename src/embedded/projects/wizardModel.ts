@@ -76,7 +76,7 @@ export function parseMessage(raw: unknown): WizardMessage | undefined {
 
 export interface WizardView {
   language: UiLanguage; labels: Record<string, string>;
-  needsDevice: boolean; projectFiles: string[]; description: string;
+  needsDevice: boolean; projectFiles: string[]; description: string; catalogNote?: string;
   templates: { id: string; label: string; description: string; icon: string; selected: boolean; category: 'general' | 'embedded' }[];
   favoriteTemplates: { id: string; name: string; problems: { text: string; fix: string }[] }[];
   sections: { id: DeviceSection; label: string; icon: string; count: number; selected: boolean }[];
@@ -182,6 +182,7 @@ export class WizardModel {
     const hasDevice = !!s.device; const hasFramework = !template?.needsFramework || !!s.framework;
     const view: WizardView = {
       needsDevice: kinds.length > 0, projectFiles: template?.backend === 'general' ? plan.preview.slice(2) : [], description: t(template?.description ?? ''),
+      ...(template?.backend === 'stm32' && kinds.length ? { catalogNote: t(snapshot.devices.some(accepts) ? 'STM32 devices come from your local STM32CubeMX database and workspace .ioc files.' : 'No STM32 devices loaded. Locate STM32CubeMX, then reload devices, or enter a part number manually.') } : {}),
       language, labels: Object.fromEntries(wizardLabelKeys.map(k => [k, t(k)])),
       templates: this.deps.projectTemplates.values().map(p => ({ id: p.id, label: t(p.label), description: t(p.description), icon: p.icon, selected: p.id === s.templateId, category: p.backend === 'general' ? 'general' as const : 'embedded' as const })),
       favoriteTemplates: this.deps.templates.list().map(f => {
