@@ -55,5 +55,13 @@
   "extension.description": "统一的项目运行、调试、运行配置编辑器与跨平台 SDK 管理器。",
   "trust.description": "运行代码需要先信任工作区。",
   "task.sakuraId": "Sakura Atelier 具体任务执行的唯一标识。",
-  "command.sakuraAtelier.embedded.manageTools": "Sakura Atelier：嵌入式工具链…"
+  "command.sakuraAtelier.embedded.manageTools": "Sakura Atelier：嵌入式工具链…",
+  "command.sakuraAtelier.embedded.platformio.selectEnvironment": "Sakura Atelier：PlatformIO：选择环境",
+  "command.sakuraAtelier.embedded.platformio.build": "Sakura Atelier：PlatformIO：构建",
+  "command.sakuraAtelier.embedded.platformio.clean": "Sakura Atelier：PlatformIO：清理",
+  "command.sakuraAtelier.embedded.platformio.upload": "Sakura Atelier：PlatformIO：上传固件",
+  "command.sakuraAtelier.embedded.platformio.debug": "Sakura Atelier：PlatformIO：调试",
+  "command.sakuraAtelier.embedded.platformio.monitor": "Sakura Atelier：PlatformIO：串口监视器",
+  "command.sakuraAtelier.embedded.platformio.test": "Sakura Atelier：PlatformIO：测试（仅构建）",
+  "command.sakuraAtelier.embedded.platformio.testOnDevice": "Sakura Atelier：PlatformIO：在设备上测试"
 }

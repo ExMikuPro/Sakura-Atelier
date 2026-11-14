@@ -50,35 +50,35 @@
       },
       {
         "command": "sakuraAtelier.embedded.platformio.selectEnvironment",
-        "title": "Sakura Atelier: PlatformIO: Select Environment..."
+        "title": "%command.sakuraAtelier.embedded.platformio.selectEnvironment%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.build",
-        "title": "Sakura Atelier: PlatformIO: Build"
+        "title": "%command.sakuraAtelier.embedded.platformio.build%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.clean",
-        "title": "Sakura Atelier: PlatformIO: Clean"
+        "title": "%command.sakuraAtelier.embedded.platformio.clean%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.upload",
-        "title": "Sakura Atelier: PlatformIO: Upload (writes firmware to the board)"
+        "title": "%command.sakuraAtelier.embedded.platformio.upload%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.debug",
-        "title": "Sakura Atelier: PlatformIO: Debug"
+        "title": "%command.sakuraAtelier.embedded.platformio.debug%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.monitor",
-        "title": "Sakura Atelier: PlatformIO: Serial Monitor"
+        "title": "%command.sakuraAtelier.embedded.platformio.monitor%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.test",
-        "title": "Sakura Atelier: PlatformIO: Test (build only on boards)"
+        "title": "%command.sakuraAtelier.embedded.platformio.test%"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.testOnDevice",
-        "title": "Sakura Atelier: PlatformIO: Test on Device (writes firmware to the board)"
+        "title": "%command.sakuraAtelier.embedded.platformio.testOnDevice%"
       },
       {
         "command": "sakuraAtelier.selectConfiguration",
