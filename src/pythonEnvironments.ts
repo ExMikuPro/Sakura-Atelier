@@ -1,3 +1,4 @@
+import { ui } from './ui';
 import * as vscode from 'vscode';
 import { activationCommand } from './activation';
 import { createHash } from 'node:crypto';
@@ -65,7 +66,7 @@ export class PythonEnvironments implements vscode.Disposable {
       if (!actual || path.resolve(actual) !== path.resolve(executable)) { throw new Error(`official selection is ${actual ?? 'unknown'}`); }
     } catch (error) {
       this.mismatch = `Python selection mismatch: ${String(error)}. Run/Debug will use ${executable}.`;
-      void vscode.window.showWarningMessage(`Sakura Atelier: ${this.mismatch}`);
+      void ui.showWarningMessage(`Sakura Atelier: ${this.mismatch}`);
     }
   }
   async discover(folder: vscode.WorkspaceFolder): Promise<LocalToolchain[]> {
@@ -131,7 +132,7 @@ export class PythonEnvironments implements vscode.Disposable {
       const mode = vscode.workspace.getConfiguration('python-envs', folder.uri).get<string>('terminal.autoActivationType');
       const legacy = vscode.workspace.getConfiguration('python', folder.uri).get<boolean>('terminal.activateEnvironment', true);
       if (activate && globalActivation && (mode === 'off' || (!mode && !legacy))) {
-        void vscode.window.showInformationMessage('Python terminal auto-activation is off in the official extension settings. No duplicate activation command was injected. Run/Debug still use the selected interpreter.');
+        void ui.showInformationMessage('Python terminal auto-activation is off in the official extension settings. No duplicate activation command was injected. Run/Debug still use the selected interpreter.');
       }
     } else if (activate && globalActivation) {
       const prefix = path.dirname(path.dirname(executable));
