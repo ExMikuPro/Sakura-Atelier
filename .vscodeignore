@@ -14,4 +14,5 @@ node_modules/**
 !media/*.js
 !media/*.ttf
 !media/*LICENSE.txt
-!out/src/environment/*.js
+!media/icon.png
+!package.nls*.json

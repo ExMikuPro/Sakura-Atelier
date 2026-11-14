@@ -1,4 +1,6 @@
 import { startHostToolchains } from './environment/hostServices';
+import { language } from './i18n';
+import { ui } from './ui';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
@@ -8,6 +10,7 @@ import { createPlans } from './planner';
 import { Mode, RunnerError, Settings, supports, relevantTaskType } from './model';
 import { TaskExecutor } from './executor';
 import { AtelierController } from './controller';
+import { initializeEmbeddedState, registerEmbeddedEditors } from './embedded/editors';
 let executor: TaskExecutor | undefined;
 let controller: AtelierController | undefined;
 export function activate(context: vscode.ExtensionContext): void {
@@ -17,10 +20,10 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(executor,controller);
   const safe = (work:()=>Promise<unknown>) => async () => {
     try { return await work(); }
-    catch(error){ if(error instanceof RunnerError&&error.message==='Run stopped.'){return;}console.error('Sakura Atelier:',error);void vscode.window.showErrorMessage(`Sakura Atelier: ${error instanceof Error?error.message:String(error)}`,'Edit Configurations...').then(action=>{if(action){void controller?.openManager();}}); }
+    catch(error){ if(error instanceof RunnerError&&error.message==='Run stopped.'){return;}console.error('Sakura Atelier:',error);void ui.showErrorMessage(`Sakura Atelier: ${error instanceof Error?error.message:String(error)}`,'Edit Configurations...').then(action=>{if(action){void controller?.openManager();}}); }
   };
   const action = (kind:'run'|'debug',mode?:Mode) => safe(async()=>{
-    if(!vscode.workspace.isTrusted){await vscode.window.showWarningMessage('Sakura Atelier: Code execution is disabled in an untrusted workspace. Trust this workspace before running.');return;}
+    if(!vscode.workspace.isTrusted){await ui.showWarningMessage('Sakura Atelier: Code execution is disabled in an untrusted workspace. Trust this workspace before running.');return;}
     await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',true);
     try{if(mode){await run(mode,()=>controller!.openManager());}else{await controller!.run(kind);}}
     finally{await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',executor?.busy??false);}
@@ -31,10 +34,20 @@ export function activate(context: vscode.ExtensionContext): void {
     register('stop',safe(()=>controller!.stop()));register('configure',safe(()=>controller!.openManager()));register('editConfigurations',safe(()=>controller!.openManager()));register('addConfiguration',safe(()=>controller!.openManager('configurations',true)));register('manageToolchains',safe(()=>controller!.openManager('toolchains')));register('sdkManager',safe(()=>controller!.openManager('sdk')));register('pythonTerminal',safe(()=>controller!.createPythonTerminal()));
     context.subscriptions.push(vscode.commands.registerCommand(`${namespace}.selectConfiguration`,(id?:string)=>safe(()=>controller!.selectConfiguration(id))()));
   }
-  if(vscode.extensions.getExtension('sakura-runner-local.sakura-runner')){void vscode.window.showInformationMessage('Sakura Atelier has a new extension ID. Disable the old Sakura Runner extension to avoid duplicate toolbar buttons.');}
+  try { initializeEmbeddedState(context); registerEmbeddedEditors(context); } catch (error) { console.error('Sakura Atelier: embedded editors are unavailable.', error); }
+  // Embedded support is loaded on first use so activation stays unchanged.
+  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug','reloadDevices','newProject'] as const){
+    context.subscriptions.push(vscode.commands.registerCommand(name==='newProject'?'sakuraAtelier.newProject':`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
+  }
+  const updateLanguage=()=>{void vscode.commands.executeCommand('setContext','sakuraAtelier.uiEnglish',language()==='en');controller?.updateStatus();};
+  updateLanguage();context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event=>{if(event.affectsConfiguration('sakuraAtelier.language'))updateLanguage();}));
+  for(const name of ['run','debug','selectConfiguration','stop','runFile','runProject','configure','editConfigurations','addConfiguration','manageToolchains','sdkManager','pythonTerminal']){context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.english.${name}`,(...args:unknown[])=>vscode.commands.executeCommand(`sakuraAtelier.${name}`,...args)));}
+  if(vscode.extensions.getExtension('sakura-runner-local.sakura-runner')){void ui.showInformationMessage('Sakura Atelier has a new extension ID. Disable the old Sakura Runner extension to avoid duplicate toolbar buttons.');}
+
+
 }
 async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): Promise<void> {
-  if (!vscode.workspace.isTrusted) { await vscode.window.showWarningMessage('Sakura Atelier: Code execution is disabled in an untrusted workspace. Trust this workspace before running.'); return; }
+  if (!vscode.workspace.isTrusted) { await ui.showWarningMessage('Sakura Atelier: Code execution is disabled in an untrusted workspace. Trust this workspace before running.'); return; }
   if (!executor) { return; }
   try {
     await executor.exclusive(async () => {
@@ -64,7 +77,7 @@ async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): 
         if (taskLabel && !matches.length) { throw new RunnerError(`Configured task "${taskLabel}" was not found in this workspace folder.`, true); }
         if (matches.length) {
           const choices=matches.map(task=>({label:task.name,description:task.source,task}));
-          const choice=choices.length===1?choices[0]:await vscode.window.showQuickPick(choices,{title:'Select run task'});
+          const choice=choices.length===1?choices[0]:await ui.showQuickPick(choices,{title:'Select run task'});
           if(choice){await executor!.runExisting(choice.task);}
           return;
         }
@@ -85,7 +98,7 @@ async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): 
       try {
         const plans = await createPlans({ file, language: document.languageId, mode: selectedMode, project, workspace: folder?.uri.fsPath, cache, settings });
         if (!plans.length) { throw new RunnerError('No runnable targets found. Add an explicit run configuration.', true); }
-        const picked = plans.length === 1 ? plans[0] : (await vscode.window.showQuickPick(plans.map((plan, i) => ({ label: plan.name, i })), { title: 'Sakura Atelier: Select run target' }));
+        const picked = plans.length === 1 ? plans[0] : (await ui.showQuickPick(plans.map((plan, i) => ({ label: plan.name, i })), { title: 'Sakura Atelier: Select run target' }));
         if (picked) { const selected='i' in picked ? plans[picked.i] : picked; if(sdk&&!legacyCustom){for(const step of selected.steps){step.env={...step.env,[process.platform==='win32'?'Path':'PATH']:[path.dirname(sdk.executable),process.env.PATH||''].join(path.delimiter),...(sdk.rustToolchain?{RUSTUP_TOOLCHAIN:sdk.rustToolchain}:{})};if(document.languageId==='go'&&step.command==='go'||document.languageId==='rust'&&step.command==='cargo'||document.languageId==='csharp'&&step.command==='dotnet'||['javascript','javascriptreact','typescript','typescriptreact'].includes(document.languageId)&&/^node(?:\.exe)?$/.test(path.basename(step.command))){step.command=sdk.executable;}}}await executor!.run(selected, folder); }
       } finally { await fs.rm(cache, { recursive: true, force: true }); }
     });
@@ -94,8 +107,8 @@ async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): 
     console.error('Sakura Atelier legacy Run:',error);
     const text = `Sakura Atelier: ${error instanceof Error ? error.message : String(error)}`;
     if (error instanceof RunnerError && error.configure) {
-      void vscode.window.showErrorMessage(text, 'Configure Runner').then(action => { if (action === 'Configure Runner') { void configure(); } });
-    } else { void vscode.window.showErrorMessage(text); }
+      void ui.showErrorMessage(text, 'Configure Runner').then(action => { if (action === 'Configure Runner') { void configure(); } });
+    } else { void ui.showErrorMessage(text); }
   }
 }
 export async function deactivate(): Promise<void> { try{await controller?.stop();}finally{controller?.dispose();controller=undefined;await executor?.shutdown();executor=undefined;} }
