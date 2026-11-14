@@ -553,6 +553,10 @@ export class ManagerPanel implements vscode.Disposable {
       }
       return;
     }
+    if (m.type === "checkDependencies") {
+      await this.controller.checkDependencies(typeof m.id === 'string' ? m.id : undefined);
+      return;
+    }
     if (m.type === "newProject") {
       await vscode.commands.executeCommand("sakuraAtelier.newProject");
       return;

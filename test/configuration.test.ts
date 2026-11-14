@@ -74,3 +74,16 @@ test('automatic project tasks exclude unrelated language providers', async () =>
   assert.equal(relevantTaskType('cpp', 'cppbuild'), true);
   assert.equal(relevantTaskType('cpp', 'gradle'), false);
 });
+
+test('read-only SDK resolution preserves the official Python selection while normal runs still synchronize', async () => {
+  const source = await fs.readFile(path.resolve(__dirname, '../src/pythonEnvironments.js'), 'utf8');
+  const required = createRequire(__filename);
+  const exports: { PythonEnvironments?: new () => { interpreter(explicit: string, folder: unknown, project: string, synchronize?: boolean): Promise<string>; synchronize(): Promise<void> } } = {};
+  runInNewContext(source, { exports, require: (name: string) => name === 'vscode' ? {} : name === './ui' ? { ui: {} } : name === './tools' ? { resolveTool: async () => '/selected/python' } : name.startsWith('./') ? required('../src/' + name.slice(2)) : required(name) });
+  const python = new exports.PythonEnvironments!(); let changes = 0;
+  python.synchronize = async () => { changes++; };
+  assert.equal(await python.interpreter('/selected/python', { uri: {} }, '/project', false), '/selected/python');
+  assert.equal(changes, 0);
+  await python.interpreter('/selected/python', { uri: {} }, '/project');
+  assert.equal(changes, 1);
+});

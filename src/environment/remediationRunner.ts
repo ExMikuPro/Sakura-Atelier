@@ -117,13 +117,13 @@ export class RemediationRunner {
           clearTimeout(timer);
           signal?.removeEventListener("abort", stop);
           this.guard.signal.removeEventListener("abort", stop);
+          await entry.after();
         }
       });
       if (!started)
         throw new EnvironmentError(
           message("operation.busy", "执行器正在处理其他操作。"),
         );
-      await entry.after();
       return {
         state,
         diagnostics: [

@@ -68,5 +68,8 @@
   "command.sakuraAtelier.embedded.stm32.flash": "Sakura Atelier：STM32：烧录",
   "command.sakuraAtelier.embedded.stm32.debug": "Sakura Atelier：STM32：调试",
   "command.sakuraAtelier.embedded.reloadDevices": "Sakura Atelier：重新加载器件",
-  "command.sakuraAtelier.newProject": "Sakura Atelier：新建嵌入式项目…"
+  "command.sakuraAtelier.newProject": "Sakura Atelier：新建嵌入式项目…",
+  "command.openToolchainRegistry": "打开当前环境的全局工具链注册表",
+  "command.rescanToolchains": "重新扫描当前环境的工具链",
+  "command.checkProjectDependencies": "Sakura Atelier：项目依赖检查与修复…"
 }

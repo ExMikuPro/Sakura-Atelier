@@ -41,10 +41,13 @@ export async function hostCandidates(
   const each = async (
     root: string,
     callback: (directory: string, name: string) => void,
+    accepts: (name: string) => boolean = () => true,
   ) => {
     try {
       for (const entry of (await fs.readdir(root, { withFileTypes: true }))
-        .filter((e) => e.isDirectory() || e.isSymbolicLink())
+        .filter(
+          (e) => (e.isDirectory() || e.isSymbolicLink()) && accepts(e.name),
+        )
         .sort((a, b) => a.name.localeCompare(b.name))
         .slice(0, 80))
         callback(p.join(root, entry.name), entry.name);
@@ -126,17 +129,33 @@ export async function hostCandidates(
   if (env.JAVA_HOME) add("java", p.join(env.JAVA_HOME, "bin"), "JAVA_HOME");
   if (env.DOTNET_ROOT) add("csharp", env.DOTNET_ROOT, ".NET");
   if (platform === "darwin") {
+    // Probe installed compilers directly, not /usr/bin Apple shims that may open an SDK installer.
+    for (const directory of [
+      "/Library/Developer/CommandLineTools/usr/bin",
+      p.join(
+        env.DEVELOPER_DIR || "/Applications/Xcode.app/Contents/Developer",
+        "Toolchains/XcodeDefault.xctoolchain/usr/bin",
+      ),
+    ]) {
+      add("c", directory, "Apple 已安装开发工具");
+      add("cpp", directory, "Apple 已安装开发工具");
+    }
+
     for (const opt of ["/opt/homebrew/opt", "/usr/local/opt"])
-      await each(opt, (dir, name) => {
-        if (/^openjdk(?:@\d+)?$/.test(name))
-          add("java", p.join(dir, "bin"), "Homebrew");
-        if (/^python(?:@\d+(?:\.\d+)?)?$/.test(name)) {
-          add("python", p.join(dir, "bin"), "Homebrew");
-          add("python", p.join(dir, "libexec", "bin"), "Homebrew");
-        }
-        if (/^node(?:@\d+)?$/.test(name))
-          add("node", p.join(dir, "bin"), "Homebrew");
-      });
+      await each(
+        opt,
+        (dir, name) => {
+          if (/^openjdk(?:@\d+)?$/.test(name))
+            add("java", p.join(dir, "bin"), "Homebrew");
+          if (/^python(?:@\d+(?:\.\d+)?)?$/.test(name)) {
+            add("python", p.join(dir, "bin"), "Homebrew");
+            add("python", p.join(dir, "libexec", "bin"), "Homebrew");
+          }
+          if (/^node(?:@\d+)?$/.test(name))
+            add("node", p.join(dir, "bin"), "Homebrew");
+        },
+        (name) => /^(?:openjdk|python|node)(?:@\d+(?:\.\d+)?)?$/.test(name),
+      );
     await each("/Library/Java/JavaVirtualMachines", (dir) =>
       add("java", p.join(dir, "Contents", "Home", "bin"), "macOS JDK"),
     );
@@ -193,11 +212,24 @@ export async function hostCandidates(
 export function safeAutomaticCandidate(
   candidate: HostCandidate,
   workspaces: readonly string[],
+  platform: NodeJS.Platform = process.platform,
 ): boolean {
-  const normalized = candidate.executable.replace(/\\/g, "/");
+  const normalized = (
+    platform === "win32"
+      ? candidate.executable.toLowerCase()
+      : candidate.executable
+  ).replace(/\\/g, "/");
+  if (/\/Microsoft\/WindowsApps\//i.test(normalized)) return false;
+  if (
+    platform === "darwin" &&
+    /^\/usr\/bin\/(?:clang(?:\+\+)?|gcc|g\+\+|cc|c\+\+)$/.test(normalized)
+  )
+    return false;
   if (/\/(?:shims|\.volta\/bin|\.cargo\/bin)\//.test(normalized)) return false;
   return !workspaces.some((root) => {
-    const r = root.replace(/\\/g, "/").replace(/\/$/, "");
+    const r = (platform === "win32" ? root.toLowerCase() : root)
+      .replace(/\\/g, "/")
+      .replace(/\/$/, "");
     return normalized === r || normalized.startsWith(r + "/");
   });
 }

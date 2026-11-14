@@ -45,7 +45,7 @@ export class SdkManager implements vscode.Disposable{
     if(accepted!=='Install'){return {cancelled:true};}this.host?.assert();
     const started=await this.installer.exclusive(()=>this.installer.run({name:`Install ${current.name}`,steps:[step]}));
     if(!started){throw new RunnerError('Another SDK installation is already running.');}
-    this.verified.clear();let installed:PackageDetails|undefined;try{installed=await adapter.details(current);}catch{/* Refresh PATH SDKs even if metadata lookup is temporarily offline. */}try{await this.refreshed(installed);}catch(error){throw new RunnerError(`SDK installation completed, but toolchain refresh failed: ${error instanceof Error?error.message:String(error)}. Use Refresh or Locate Existing SDK.`,true);}return {cancelled:false};
+    this.verified.clear();let installed:PackageDetails|undefined;try{installed=await adapter.details(current);}catch{/* Refresh PATH SDKs even if metadata lookup is temporarily offline. */}try{await hostToolchains()?.refresh();await this.refreshed(installed);}catch(error){throw new RunnerError(`SDK installation completed, but toolchain refresh failed: ${error instanceof Error?error.message:String(error)}. Use Refresh or Locate Existing SDK.`,true);}return {cancelled:false};
   }
   dispose():void{this.host?.signal.removeEventListener('abort',this.stopForHost);this.installer.dispose();}
 }

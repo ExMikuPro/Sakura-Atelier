@@ -39,8 +39,44 @@ export async function run(): Promise<void> {
   assert.ok(languages.includes("go"));
   assert.ok(!registry.file.startsWith(root + path.sep));
   assert.ok(first.tools.every((t) => t.hostId === first.host.id));
+  if (process.platform !== "win32") {
+    const directory = path.join(path.dirname(root), "manual fixture");
+    await fs.mkdir(directory);
+    const executable = path.join(directory, "node-fixture");
+    await fs.writeFile(executable, "#!/bin/sh\necho v22.0.0\n", {
+      mode: 0o755,
+    });
+    const canonical=await fs.realpath(executable);
+    await registry.add({
+      id: "manual-fixture",
+      language: "node",
+      name: "手动验证夹具（非真实 SDK）",
+      executable,
+      version: "",
+      manager: "custom",
+      project: "",
+    });
+    await registry.refresh();
+    assert.ok(
+      registry
+        .snapshot()
+        .tools.some(
+          (t) => t.manual && t.canonicalPath === canonical && t.available,
+        ),
+    );
+    await fs.unlink(executable);
+    await registry.refresh();
+    assert.ok(
+      registry
+        .snapshot()
+        .tools.some(
+          (t) => t.manual && t.canonicalPath === canonical && !t.available,
+        ),
+    );
+  }
   const commands = await vscode.commands.getCommands();
   assert.ok(commands.includes("sakuraAtelier.openToolchainRegistry"));
+  assert.ok(commands.includes("sakuraAtelier.rescanToolchains"));
   await fs.writeFile(
     process.env.SAKURA_P1_REPORT!,
     JSON.stringify(

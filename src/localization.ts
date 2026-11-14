@@ -1,6 +1,12 @@
 /** Shared parameterized messages for the extension host and Webview. English keys are the fallback. */
 export type UiLanguage = "zh-cn" | "en";
 export const chinese: Record<string, string> = {
+  "Project Dependencies...": "项目依赖检查与修复…",
+  "No dependency declarations found in this project.": "当前项目未发现依赖声明。",
+  "Dependency inspection": "项目依赖检查",
+  "Inspect only; do not run a repair": "仅查看诊断，不执行修复",
+  "Select a repair plan to review its native confirmation.": "选择修复计划后，仍需在原生确认框中核对命令。",
+  "Dependency operation: {0}": "依赖操作结果：{0}",
   "Target host: {0} · {1}/{2}": "目标环境：{0} · {1}/{2}",
   "Installation scope: {0}": "安装范围：{0}",
   "Current container only": "当前容器内部，不修改容器宿主",

@@ -101,8 +101,8 @@ export class PythonEnvironments implements vscode.Disposable {
     }
     return results;
   }
-  async interpreter(explicit: string, folder: vscode.WorkspaceFolder, project: string): Promise<string> {
-    if (explicit) { const executable = await resolveTool(explicit, project); await this.synchronize(executable, folder.uri); return executable; }
+  async interpreter(explicit: string, folder: vscode.WorkspaceFolder, project: string, synchronize = true): Promise<string> {
+    if (explicit) { const executable = await resolveTool(explicit, project); if (synchronize) { await this.synchronize(executable, folder.uri); } return executable; }
     const current = await this.current(folder.uri);
     if (current) { return resolveTool(current, project); }
     for (const name of ['.venv','venv']) {

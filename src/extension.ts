@@ -39,6 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
   for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug','reloadDevices','newProject'] as const){
     context.subscriptions.push(vscode.commands.registerCommand(name==='newProject'?'sakuraAtelier.newProject':`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
   }
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.checkProjectDependencies',safe(()=>controller!.checkDependencies())));
   const updateLanguage=()=>{void vscode.commands.executeCommand('setContext','sakuraAtelier.uiEnglish',language()==='en');controller?.updateStatus();};
   updateLanguage();context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event=>{if(event.affectsConfiguration('sakuraAtelier.language'))updateLanguage();}));
   for(const name of ['run','debug','selectConfiguration','stop','runFile','runProject','configure','editConfigurations','addConfiguration','manageToolchains','sdkManager','pythonTerminal']){context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.english.${name}`,(...args:unknown[])=>vscode.commands.executeCommand(`sakuraAtelier.${name}`,...args)));}

@@ -61,6 +61,7 @@ export class ToolchainRegistry {
   private listeners = new Set<(value: RegistrySnapshot) => void>();
   private running?: Promise<void>;
   private initialization?: Promise<void>;
+  private startupRefresh?: Promise<void>;
   private writing: Promise<void> = Promise.resolve();
   private disposed = false;
   constructor(
@@ -171,7 +172,7 @@ export class ToolchainRegistry {
         age > this.ttlMs ||
         this.guard.environment.kind !== "local"
       ) {
-        void this.refresh().catch(() => {});
+        this.startupRefresh = this.refresh().catch(() => {});
       }
     });
     return this.initialization;
@@ -302,6 +303,7 @@ export class ToolchainRegistry {
   }
   async settled(): Promise<void> {
     await this.initialization;
+    await this.startupRefresh;
     await this.running;
     await this.writing;
   }

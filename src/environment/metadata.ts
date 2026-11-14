@@ -22,17 +22,20 @@ export async function projectScope(
   workspaces: readonly string[],
   file: string,
 ): Promise<ProjectScope> {
-  const candidates = workspaces
-    .filter((root) => within(root, path.resolve(file)))
+  const target = await fs.realpath(file);
+  const candidates = (
+    await Promise.all(
+      workspaces.map((root) => fs.realpath(root).catch(() => undefined)),
+    )
+  )
+    .filter((root): root is string => !!root && within(root, target))
     .sort((a, b) => b.length - a.length);
   for (const workspace of candidates) {
-    if (await contained(workspace, file)) {
-      const stat = await fs.stat(file);
+    if (await contained(workspace, target)) {
+      const stat = await fs.stat(target);
       return {
-        workspace: await fs.realpath(workspace),
-        root: stat.isDirectory()
-          ? await fs.realpath(file)
-          : path.dirname(await fs.realpath(file)),
+        workspace,
+        root: stat.isDirectory() ? target : path.dirname(target),
       };
     }
   }
