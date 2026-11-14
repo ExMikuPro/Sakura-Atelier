@@ -14,6 +14,7 @@ import { EnvironmentError, message, RemediationPlan } from "./model";
 /** Stable service factory for P0. Callers dispose it alongside their panel/controller. */
 export function createPythonEnvironmentServices(
   python = new PythonEnvironments(),
+  disposePython = true,
 ): {
   service: PythonEnvironmentService;
   runner: RemediationRunner;
@@ -97,7 +98,7 @@ export function createPythonEnvironmentServices(
     runner,
     dispose() {
       executor.dispose();
-      python.dispose();
+      if (disposePython) python.dispose();
     },
   };
 }

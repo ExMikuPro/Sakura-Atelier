@@ -1,0 +1,163 @@
+[
+ {
+  "id": "1bitsy_stm32f415rgt",
+  "name": "1Bitsy",
+  "platform": "ststm32",
+  "mcu": "STM32F415RGT",
+  "fcpu": 168000000,
+  "ram": 131072,
+  "rom": 1048576,
+  "frameworks": [
+   "libopencm3",
+   "cmsis",
+   "spl",
+   "stm32cube"
+  ],
+  "vendor": "1BitSquared",
+  "url": "http://1bitsy.org"
+ },
+ {
+  "id": "megaatmega2560",
+  "name": "Arduino Mega or Mega 2560 ATmega2560 (Mega 2560)",
+  "platform": "atmelavr",
+  "mcu": "ATMEGA2560",
+  "fcpu": 16000000,
+  "ram": 8192,
+  "rom": 253952,
+  "frameworks": [
+   "arduino"
+  ],
+  "vendor": "Arduino",
+  "url": "https://www.arduino.cc/en/Main/ArduinoBoardMega2560"
+ },
+ {
+  "id": "uno",
+  "name": "Arduino Uno",
+  "platform": "atmelavr",
+  "mcu": "ATMEGA328P",
+  "fcpu": 16000000,
+  "ram": 2048,
+  "rom": 32256,
+  "frameworks": [
+   "arduino"
+  ],
+  "vendor": "Arduino",
+  "url": "https://www.arduino.cc/en/Main/ArduinoBoardUno"
+ },
+ {
+  "id": "bluepill_f103c8",
+  "name": "BluePill F103C8",
+  "platform": "ststm32",
+  "mcu": "STM32F103C8T6",
+  "fcpu": 72000000,
+  "ram": 20480,
+  "rom": 65536,
+  "frameworks": [
+   "arduino",
+   "cmsis",
+   "libopencm3",
+   "stm32cube",
+   "zephyr"
+  ],
+  "vendor": "Generic",
+  "url": "http://www.st.com/content/st_com/en/products/microcontrollers/stm32-32-bit-arm-cortex-mcus/stm32f1-series/stm32f103/stm32f103c8.html"
+ },
+ {
+  "fcpu": 240000000,
+  "frameworks": [
+   "arduino",
+   "espidf"
+  ],
+  "id": "esp32dev",
+  "mcu": "ESP32",
+  "name": "Espressif ESP32 Dev Module",
+  "platform": "espressif32",
+  "ram": 327680,
+  "rom": 4194304,
+  "url": "https://en.wikipedia.org/wiki/ESP32",
+  "vendor": "Espressif"
+ },
+ {
+  "fcpu": 240000000,
+  "frameworks": [
+   "arduino",
+   "espidf"
+  ],
+  "id": "esp32-s3-devkitc-1",
+  "mcu": "ESP32S3",
+  "name": "Espressif ESP32-S3-DevKitC-1-N8 (8 MB QD, No PSRAM)",
+  "platform": "espressif32",
+  "ram": 327680,
+  "rom": 8388608,
+  "url": "https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html",
+  "vendor": "Espressif"
+ },
+ {
+  "id": "nucleo_g071rb",
+  "name": "Nucleo G071RB",
+  "platform": "ststm32",
+  "mcu": "STM32G071RBT6",
+  "fcpu": 64000000,
+  "ram": 36864,
+  "rom": 131072,
+  "frameworks": [
+   "arduino",
+   "cmsis",
+   "libopencm3",
+   "stm32cube",
+   "zephyr"
+  ],
+  "vendor": "ST",
+  "url": "https://www.st.com/en/evaluation-tools/nucleo-g071rb.html"
+ },
+ {
+  "fcpu": 133000000,
+  "frameworks": [
+   "arduino"
+  ],
+  "id": "pico",
+  "mcu": "RP2040",
+  "name": "Raspberry Pi Pico",
+  "platform": "raspberrypi",
+  "ram": 270336,
+  "rom": 2097152,
+  "url": "https://www.raspberrypi.org/products/raspberry-pi-pico/",
+  "vendor": "Raspberry Pi"
+ },
+ {
+  "id": "nucleo_f401re",
+  "name": "ST Nucleo F401RE",
+  "platform": "ststm32",
+  "mcu": "STM32F401RET6",
+  "fcpu": 84000000,
+  "ram": 98304,
+  "rom": 524288,
+  "frameworks": [
+   "arduino",
+   "mbed",
+   "cmsis",
+   "spl",
+   "stm32cube",
+   "libopencm3",
+   "zephyr"
+  ],
+  "vendor": "ST",
+  "url": "https://developer.mbed.org/platforms/ST-Nucleo-F401RE/"
+ },
+ {
+  "id": "nucleo_g0b1re",
+  "name": "ST Nucleo G0B1RE",
+  "platform": "ststm32",
+  "mcu": "STM32G0B1RET6",
+  "fcpu": 64000000,
+  "ram": 147456,
+  "rom": 524288,
+  "frameworks": [
+   "arduino",
+   "stm32cube",
+   "libopencm3"
+  ],
+  "vendor": "ST",
+  "url": "https://www.st.com/en/evaluation-tools/nucleo-g0b1re.html"
+ }
+]
