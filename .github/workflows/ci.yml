@@ -53,6 +53,8 @@ jobs:
         run: npm run test:integration
       - name: Verify host-isolated SDK discovery
         run: node scripts/integration-p1.cjs p1-a
+      - name: Verify Python environment creation and rediscovery
+        run: node scripts/integration-p1.cjs p1-b
       - name: Run actual new-project wizard UI in stable VS Code
         run: npm run test:wizard
 

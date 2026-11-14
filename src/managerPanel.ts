@@ -31,6 +31,7 @@ export class ManagerPanel implements vscode.Disposable {
   private editor?: EditorContext;
   private subscriptions: vscode.Disposable[] = [];
   private sdk: SdkManager;
+  private pythonWorkflow?: ReturnType<typeof import("./environment/pythonServiceHost").createPythonEnvironmentServices>;
   private discovered = new Map<string, LocalToolchain>();
   private ready = false;
   private disposed = false;
@@ -72,6 +73,7 @@ export class ManagerPanel implements vscode.Disposable {
       this.panel.onDidDispose(() => {
         this.disposed = true;
         void this.flushOnClose();
+        this.pythonWorkflow?.dispose();
         this.sdk.dispose();
         for (const sub of this.subscriptions) {
           sub.dispose();
@@ -862,61 +864,25 @@ export class ManagerPanel implements vscode.Disposable {
           "Trust the workspace before creating an environment.",
         );
       }
+      const { createPythonEnvironmentServices } = await import("./environment/pythonServiceHost");
+      const workflow = this.pythonWorkflow ??= createPythonEnvironmentServices(this.controller.python, false);
+      const status = await workflow.service.diagnose(editor.file || editor.root, (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath));
       const modern = await this.controller.python.modern();
       if (modern?.createEnvironment) {
-        await modern.createEnvironment(editor.folder.uri, {
-          quickCreate: false,
-        });
+        if (!await workflow.service.createOfficial(status)) { return; }
       } else {
-        const tool =
-          this.discovered.get(String(m.id)) ??
-          this.controller.store
-            .toolchains(editor.folder)
-            .find((t) => t.id === m.id);
-        if (!tool || tool.language !== "python") {
-          throw new RunnerError(
-            "Select a discovered Python interpreter first.",
-          );
-        }
+        const tool = this.discovered.get(String(m.id)) ?? this.controller.store.toolchains(editor.folder).find(t => t.id === m.id);
+        if (!tool || tool.language !== 'python') { throw new RunnerError('Select a discovered Python interpreter first.'); }
         const name = await ui.showInputBox({
-          title: "Create virtual environment in this workspace",
-          value: ".venv",
-          validateInput: (v) =>
-            /^[a-zA-Z0-9_. -]+$/.test(v) && v !== "." && v !== ".."
-              ? undefined
-              : "Use one new directory name.",
+          title: 'Create virtual environment in this workspace', value: '.venv',
+          validateInput: value => /^[\w.-]+$/.test(value) && value !== '.' && value !== '..' ? undefined : 'Use one new directory name.',
         });
-        if (!name) {
-          return;
-        }
-        const target = path.join(editor.folder.uri.fsPath, name);
-        if (
-          await fs
-            .stat(target)
-            .then(() => true)
-            .catch(() => false)
-        ) {
-          throw new RunnerError(
-            "That directory already exists; it will not be overwritten.",
-          );
-        }
-        await this.controller.executor.exclusive(() =>
-          this.controller.executor.run(
-            {
-              name: "Create Python venv",
-              steps: [
-                {
-                  command: tool.executable,
-                  args: ["-m", "venv", target],
-                  cwd: editor.folder.uri.fsPath,
-                  label: "Create Python environment",
-                },
-              ],
-            },
-            editor.folder,
-          ),
-        );
+        if (!name) { return; }
+        const plan = await workflow.service.prepareCreation(status, tool, 'venv', undefined, name);
+        const result = await workflow.runner.execute(plan.id);
+        if (result.state !== 'completed') { return; }
       }
+      await hostToolchains()?.refresh();
       const tools = await this.controller.discovery.discover(
         "python",
         editor.folder,
