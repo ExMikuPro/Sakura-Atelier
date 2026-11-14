@@ -46,6 +46,10 @@ export async function run(): Promise<void> {
   await expect(frame.locator('#dir')).toHaveValue(root);
   await frame.getByRole('button', { name: '收藏此项目配置', exact: true }).click();
   await expect(frame.locator('#nav')).toContainText('STM32F401RET6');
+  const editor = await vscode.workspace.openTextDocument({ content: 'wizard hide/reveal fixture', language: 'plaintext' });
+  await vscode.window.showTextDocument(editor);
+  frame = await wizard();
+  await expect(frame.locator('#name')).toHaveValue('HostCreatedProject');
   await vscode.workspace.getConfiguration('workbench').update('colorTheme', 'Default Dark Modern', vscode.ConfigurationTarget.Workspace);
   await screenshot(page, 'wizard-dark');
   await vscode.workspace.getConfiguration('workbench').update('colorTheme', 'Default Light Modern', vscode.ConfigurationTarget.Workspace);

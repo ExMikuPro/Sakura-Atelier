@@ -100,7 +100,7 @@ class WizardPanel {
     const message = parseMessage(raw); if (!message) { return; }
     const revision = (raw as { clientRevision?: unknown }).clientRevision;
     if (typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0) {
-      if (revision < this.clientRevision) { return; }
+      if (message.type !== 'ready' && revision < this.clientRevision) { return; }
       this.clientRevision = revision;
     }
     const t = (m: string, ...a: unknown[]) => wizardText(this.language(), m, ...a);
