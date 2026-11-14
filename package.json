@@ -596,6 +596,18 @@
           }
         }
       }
+    ],
+    "customEditors": [
+      {
+        "viewType": "sakuraAtelier.iocViewer",
+        "displayName": "Sakura Atelier STM32CubeMX Project",
+        "selector": [
+          {
+            "filenamePattern": "*.ioc"
+          }
+        ],
+        "priority": "default"
+      }
     ]
   },
   "scripts": {
