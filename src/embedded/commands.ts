@@ -20,7 +20,7 @@ import { defaultEnvironments } from './platformio/ini';
 export const embeddedCommandNames = [
   'manageTools', 'platformio.selectEnvironment', 'platformio.build', 'platformio.clean', 'platformio.upload',
   'platformio.debug', 'platformio.monitor', 'platformio.test', 'platformio.testOnDevice',
-  'stm32.build', 'stm32.flash', 'stm32.debug', 'reloadDevices'
+  'stm32.build', 'stm32.flash', 'stm32.debug', 'reloadDevices', 'newProject'
 ] as const;
 export type EmbeddedCommandName = typeof embeddedCommandNames[number];
 
@@ -160,6 +160,7 @@ async function stm32(name: string, context: vscode.ExtensionContext, executor: T
 export async function runEmbeddedCommand(name: EmbeddedCommandName, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
   if (!vscode.workspace.isTrusted) { await vscode.window.showWarningMessage('Sakura Atelier: Trust this workspace before using embedded tools; they run local programs.'); return; }
   if (name === 'manageTools') { await manageEmbeddedTools(createToolRegistry(context)); return; }
+  if (name === 'newProject') { await (await import('./projects/wizardPanel')).openNewProject(context); return; }
   if (name === 'reloadDevices') { await (await import('./devices/service')).reloadDevices(context); return; }
   if (name.startsWith('stm32.')) { await stm32(name, context, executor, debug); return; }
   await platformio(name, context, executor, debug);

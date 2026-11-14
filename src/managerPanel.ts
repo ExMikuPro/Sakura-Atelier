@@ -542,6 +542,10 @@ export class ManagerPanel implements vscode.Disposable {
       }
       return;
     }
+    if (m.type === "newProject") {
+      await vscode.commands.executeCommand("sakuraAtelier.newProject");
+      return;
+    }
     if (m.type === "workspace") {
       const folder = vscode.workspace.workspaceFolders?.find(
         (f) => f.uri.toString() === m.folder,

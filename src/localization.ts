@@ -1,6 +1,7 @@
 /** Shared parameterized messages for the extension host and Webview. English keys are the fallback. */
 export type UiLanguage = "zh-cn" | "en";
 export const chinese: Record<string, string> = {
+  "New Embedded Project...": "新建嵌入式项目…",
   "Run / Debug Configurations": "运行 / 调试配置",
   "Sakura Atelier · one configuration for running, debugging and testing":
     "Sakura Atelier · 统一运行、调试与测试配置",

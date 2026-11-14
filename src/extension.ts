@@ -34,8 +34,8 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   try { initializeEmbeddedState(context); registerEmbeddedEditors(context); } catch (error) { console.error('Sakura Atelier: embedded editors are unavailable.', error); }
   // Embedded support is loaded on first use so activation stays unchanged.
-  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug','reloadDevices'] as const){
-    context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
+  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug','reloadDevices','newProject'] as const){
+    context.subscriptions.push(vscode.commands.registerCommand(name==='newProject'?'sakuraAtelier.newProject':`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
   }
   const updateLanguage=()=>{void vscode.commands.executeCommand('setContext','sakuraAtelier.uiEnglish',language()==='en');controller?.updateStatus();};
   updateLanguage();context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event=>{if(event.affectsConfiguration('sakuraAtelier.language'))updateLanguage();}));

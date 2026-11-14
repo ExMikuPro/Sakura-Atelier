@@ -35,6 +35,18 @@ export async function run(): Promise<void> {
     assert.equal(await fs.readFile(file, 'utf8'), content);
     await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
   });
+  await check('new project wizard opens in the minimum supported Extension Host', async () => {
+    const rejections: unknown[] = [];
+    const rejected = (error: unknown) => { rejections.push(error); };
+    process.on('unhandledRejection', rejected);
+    try {
+      await vscode.commands.executeCommand('sakuraAtelier.newProject');
+      assert.ok(vscode.window.tabGroups.activeTabGroup.activeTab?.input instanceof vscode.TabInputWebview);
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+      await delay(1500);
+      assert.deepEqual(rejections, [], 'closing during device discovery must not post to a disposed Webview');
+    } finally { process.removeListener('unhandledRejection', rejected); }
+  });
   async function runCommand(file: string, command: string, expectedSteps = 1) {
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file));
     const exits: (number | undefined)[] = [];

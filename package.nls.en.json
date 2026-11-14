@@ -67,5 +67,6 @@
   "command.sakuraAtelier.embedded.stm32.build": "Sakura Atelier: STM32: Build",
   "command.sakuraAtelier.embedded.stm32.flash": "Sakura Atelier: STM32: Flash (writes firmware to the board)",
   "command.sakuraAtelier.embedded.stm32.debug": "Sakura Atelier: STM32: Debug",
-  "command.sakuraAtelier.embedded.reloadDevices": "Sakura Atelier: Reload PlatformIO Boards"
+  "command.sakuraAtelier.embedded.reloadDevices": "Sakura Atelier: Reload PlatformIO Boards",
+  "command.sakuraAtelier.newProject": "Sakura Atelier: New Embedded Project..."
 }

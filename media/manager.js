@@ -787,6 +787,7 @@
       () => addConfiguration({ currentTarget: add }),
       "add",
     );
+    nav(configs, "New Embedded Project...", () => send("newProject"), "new-folder");
     add.id = "add-configuration";
     add.setAttribute("aria-haspopup", "dialog");
     add.setAttribute("aria-expanded", "false");

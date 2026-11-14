@@ -97,6 +97,11 @@
         "title": "%command.sakuraAtelier.embedded.reloadDevices%"
       },
       {
+        "command": "sakuraAtelier.newProject",
+        "title": "%command.sakuraAtelier.newProject%",
+        "icon": "$(new-folder)"
+      },
+      {
         "command": "sakuraAtelier.selectConfiguration",
         "title": "%command.sakuraAtelier.selectConfiguration%",
         "icon": "$(chevron-down)"
@@ -455,6 +460,12 @@
           "command": "sakuraAtelier.english.pythonTerminal",
           "when": "sakuraAtelier.uiEnglish"
         }
+      ],
+      "file/newFile": [
+        {
+          "command": "sakuraAtelier.newProject",
+          "group": "file"
+        }
       ]
     },
     "configuration": {
@@ -615,12 +626,13 @@
     ]
   },
   "scripts": {
-    "compile": "tsc -p . && node scripts/bundle.cjs",
+    "compile": "node scripts/clean-output.cjs && tsc -p . && node scripts/bundle.cjs",
     "lint": "eslint src test scripts",
     "test": "npm run compile && npm run lint && node --test out/test/*.test.js",
     "test:integration": "npm run compile && node scripts/integration.cjs",
-    "package": "npm run compile && vsce package --no-dependencies --allow-missing-repository --out sakura-atelier-0.1.0.vsix",
-    "test:ui": "npm run compile && playwright test"
+    "package": "npm run compile && vsce package --no-dependencies --allow-missing-repository --out sakura-atelier-0.1.0.vsix && node scripts/verify-package.cjs",
+    "test:ui": "npm run compile && playwright test",
+    "test:wizard": "npm run compile && node scripts/wizard-integration.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

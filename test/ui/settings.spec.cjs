@@ -676,3 +676,8 @@ test("undo and delayed sequential saves preserve the last user input", async ({
     "最后的名称",
   );
 });
+
+test('existing configuration navigation opens the unified embedded project wizard', async ({ page }) => {
+  await page.getByRole('treeitem', { name: '新建嵌入式项目…', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.__uiMessages.some(message => message.type === 'newProject'))).toBe(true);
+});
