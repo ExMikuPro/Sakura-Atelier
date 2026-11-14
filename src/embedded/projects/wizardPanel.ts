@@ -41,6 +41,7 @@ class WizardPanel {
   private readonly panel: vscode.WebviewPanel;
   private readonly model: WizardModel;
   private loaded = false;
+  private disposed = false;
   private completed = false;
   private tools: { pio?: string; cubemx?: string } = {};
   private readonly language = () => resolveUiLanguage(vscode.workspace.getConfiguration('sakuraAtelier').get<string>('language', 'zh-cn'), vscode.env.language);
@@ -57,7 +58,7 @@ class WizardPanel {
       language: this.language()
     }, this.initialState());
     this.panel = vscode.window.createWebviewPanel('sakuraAtelier.newProject', wizardText(this.language(), 'New embedded project'), vscode.ViewColumn.Active, { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')], retainContextWhenHidden: false });
-    this.panel.onDidDispose(() => { if (!this.completed) { void this.saveDraft(); } this.onDispose(); });
+    this.panel.onDidDispose(() => { this.disposed = true; if (!this.completed) { void this.saveDraft().catch(error => { void vscode.window.showWarningMessage(`Sakura Atelier: Could not save project draft: ${String(error)}`); }); } this.onDispose(); });
     this.panel.webview.onDidReceiveMessage(message => { void this.handle(message); });
     this.panel.onDidChangeViewState(() => { if (this.panel.visible) { void this.post(); } });
   }
@@ -76,7 +77,7 @@ class WizardPanel {
     const nonce = randomBytes(16).toString('base64');
     this.panel.webview.html = renderWizardHtml({ nonce, cspSource: this.panel.webview.cspSource, codiconUri: this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'codicon.css')).toString(), cssLanguage: this.language() === 'zh-cn' ? 'zh-CN' : 'en', title: wizardText(this.language(), 'New embedded project') });
     await this.refreshTools();
-    void deviceCatalog(this.context).load(false).then(() => { this.loaded = true; return this.post(); });
+    void deviceCatalog(this.context).load(false).then(() => { this.loaded = true; return this.post(); }).catch(error => { if (!this.disposed) { void vscode.window.showErrorMessage(`Sakura Atelier: Could not load devices: ${String(error)}`); } });
   }
 
   private async refreshTools(): Promise<void> {
@@ -85,8 +86,10 @@ class WizardPanel {
   }
 
   private async post(extra?: { notice?: string }): Promise<void> {
+    if (this.disposed) { return; }
     const view = await this.model.view();
-    void this.panel.webview.postMessage({ type: 'view', view: { ...view, ...(extra?.notice ? { notice: extra.notice } : {}) } });
+    if (this.disposed) { return; }
+    await this.panel.webview.postMessage({ type: 'view', view: { ...view, ...(extra?.notice ? { notice: extra.notice } : {}) } });
   }
 
   private async handle(raw: unknown): Promise<void> {

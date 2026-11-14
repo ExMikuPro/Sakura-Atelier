@@ -51,6 +51,9 @@ input:focus-visible, select:focus-visible, button:focus-visible, .item:focus-vis
 .empty { color: var(--vscode-descriptionForeground); padding: 24px 0; text-align: center; }
 .field { margin: 10px 0; } .field > label { display: block; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
 .inline { display: flex; gap: 6px; align-items: center; }
+.inline > input { min-width: 0; flex: 1; }
+.inline > button { flex-shrink: 0; }
+.warn, .err, .notice { overflow-wrap: anywhere; }
 button.btn { font: inherit; padding: 5px 14px; border: 1px solid var(--vscode-button-border, transparent); border-radius: 2px; cursor: pointer; color: var(--vscode-button-foreground); background: var(--vscode-button-background); }
 button.btn:hover:not(:disabled) { background: var(--vscode-button-hoverBackground); } button.btn.secondary { color: var(--vscode-button-secondaryForeground); background: var(--vscode-button-secondaryBackground); } button.btn:disabled { opacity: .5; cursor: not-allowed; }
 .steps { list-style: none; margin: 8px 0 16px; padding: 0; } .steps li { display: flex; gap: 8px; padding: 2px 0; color: var(--vscode-descriptionForeground); } .steps li.done { color: var(--vscode-foreground); }
@@ -58,7 +61,7 @@ button.btn:hover:not(:disabled) { background: var(--vscode-button-hoverBackgroun
 .notice { background: var(--vscode-inputValidation-infoBackground, transparent); border: 1px solid var(--vscode-inputValidation-infoBorder, transparent); padding: 6px 10px; border-radius: 3px; margin: 8px 0; }
 pre.preview { margin: 0; white-space: pre-wrap; word-break: break-all; font-family: var(--vscode-editor-font-family); font-size: .9em; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-@media (max-width: 900px) { .wizard { grid-template-columns: 1fr; height: auto; } .nav, .list, .detail { overflow: visible; border-right: 0; } .rows { max-height: 50vh; } .nav { display: flex; flex-wrap: wrap; padding: 8px; } .nav h2 { width: 100%; } .nav .item { width: auto; } }
+@media (max-width: 900px) { .wizard { grid-template-columns: minmax(0, 1fr); height: auto; } .nav, .list, .detail { overflow: visible; border-right: 0; } .rows { max-height: 50vh; } .nav { display: flex; flex-wrap: wrap; padding: 8px; } .nav h2 { width: 100%; } .nav .item { width: auto; max-width: 100%; min-width: 0; } .nav > * { min-width: 0; max-width: 100%; } .nav .row { width: 100%; } }
 `;
 
 export const wizardScript = `

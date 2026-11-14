@@ -213,7 +213,9 @@ test('the manifest adds the wizard to File > New File and the command palette, a
   const manifest = JSON.parse(readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
   assert.deepEqual(manifest.contributes.menus['file/newFile'], [{ command: 'sakuraAtelier.newProject', group: 'file' }]);
   const command = manifest.contributes.commands.find((c: { command: string }) => c.command === 'sakuraAtelier.newProject');
-  assert.equal(command.title, 'Sakura Atelier：新建项目');
+  const nls = JSON.parse(readFileSync(path.resolve(__dirname, '../../package.nls.json'), 'utf8'));
+  assert.equal(command.title, '%command.sakuraAtelier.newProject%');
+  assert.equal(nls[command.title.slice(1, -1)], 'Sakura Atelier：新建嵌入式项目…');
   assert.ok(!JSON.stringify(manifest.contributes.menus['file/newFile']).includes('workspace'));
   assert.ok(!(manifest.contributes.menus.commandPalette ?? []).some((m: { command: string; when?: string }) => m.command === 'sakuraAtelier.newProject' && /workspace/i.test(m.when ?? '')));
   assert.deepEqual(manifest.activationEvents, ['onStartupFinished']);

@@ -631,7 +631,8 @@
     "test": "npm run compile && npm run lint && node --test out/test/*.test.js",
     "test:integration": "npm run compile && node scripts/integration.cjs",
     "package": "npm run compile && vsce package --no-dependencies --allow-missing-repository --out sakura-atelier-0.1.0.vsix",
-    "test:ui": "npm run compile && playwright test"
+    "test:ui": "npm run compile && playwright test",
+    "test:wizard": "npm run compile && node scripts/wizard-integration.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",
