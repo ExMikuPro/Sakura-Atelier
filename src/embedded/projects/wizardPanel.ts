@@ -67,6 +67,7 @@ class WizardPanel {
   private initialState(): unknown {
     const draft = this.context.globalState.get<unknown>(draftKey);
     const defaults = this.context.globalState.get<Defaults>(defaultsKey, {});
+    defaults.parentDir ??= vscode.workspace.workspaceFolders?.find(f => f.uri.scheme === 'file')?.uri.fsPath;
     return { ...(draft && typeof draft === 'object' ? draft : {}), ...(typeof defaults.parentDir === 'string' && !(draft as { parentDir?: string } | undefined)?.parentDir ? { parentDir: defaults.parentDir } : {}) };
   }
   private async saveDraft(): Promise<void> { await this.context.globalState.update(draftKey, this.model.state); }

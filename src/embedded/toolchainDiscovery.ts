@@ -132,6 +132,12 @@ export async function cltComponents(root: string, host: DiscoveryHost): Promise<
   return result;
 }
 
+function macBinaryHints(host: DiscoveryHost): string[] {
+  if (host.platform !== 'darwin') { return []; }
+  const prefix = host.env.HOMEBREW_PREFIX;
+  return [...new Set([...(prefix && pathApi(host.platform).isAbsolute(prefix) ? [pathApi(host.platform).join(prefix, 'bin')] : []), '/opt/homebrew/bin', '/usr/local/bin'])];
+}
+
 async function onPath(name: string, host: DiscoveryHost): Promise<string[]> {
   const p = pathApi(host.platform);
   const raw = host.env.PATH ?? host.env.Path ?? '';
@@ -175,7 +181,7 @@ export async function discoverEmbeddedTools(host: DiscoveryHost, manual: ManualP
         for (const name of spec.names(host.platform)) { const sibling = p.join(p.dirname(gcc.path), exe(host, name)); if (await host.stat(sibling) === 'file') { add(id, sibling, 'sibling'); } }
       }
     }
-    for (const dir of await spec.hints(host)) {
+    for (const dir of [...await spec.hints(host), ...macBinaryHints(host)]) {
       for (const name of spec.names(host.platform)) { const candidate = p.join(dir, exe(host, name)); if (await host.stat(candidate) === 'file') { add(id, candidate, 'hint'); } }
     }
   }

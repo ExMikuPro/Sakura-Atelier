@@ -25,6 +25,16 @@ export async function run(): Promise<void> {
     for (const command of ['run', 'runFile', 'runProject', 'stop', 'configure']) { assert.ok(commands.includes(`sakuraRunner.${command}`)); }
     assert.ok(vscode.workspace.isTrusted);
   });
+  await check('STM32 .ioc opens its read-only custom editor in the actual Extension Host', async () => {
+    const content = 'Mcu.Name=STM32F401RETx\nMcu.UserName=STM32F401RET6\nProjectManager.ProjectName=HostFixture\n';
+    const file = await makeFile('stm32 readonly/HostFixture.ioc', content);
+    await vscode.commands.executeCommand('vscode.openWith', vscode.Uri.file(file), 'sakuraAtelier.iocViewer');
+    const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
+    assert.ok(tab?.input instanceof vscode.TabInputCustom);
+    assert.equal(tab.input.viewType, 'sakuraAtelier.iocViewer');
+    assert.equal(await fs.readFile(file, 'utf8'), content);
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  });
   async function runCommand(file: string, command: string, expectedSteps = 1) {
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file));
     const exits: (number | undefined)[] = [];
