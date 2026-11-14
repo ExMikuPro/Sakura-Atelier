@@ -1,3 +1,4 @@
+import { hostToolchains } from './environment/registryAccess';
 import { t } from './i18n';
 import * as vscode from 'vscode';
 import { randomUUID } from 'node:crypto';
@@ -6,7 +7,9 @@ import { resolveTool, processEnvironment } from './tools';
 import { CapturedExecutor } from './capturedExecutor';
 /** Tasks own their process trees and interactive terminals; no detached child processes. */
 export class TaskExecutor implements vscode.Disposable, ExecutionBackend {
-  constructor(private readonly source = 'Sakura Atelier') {}
+  private readonly host=hostToolchains()?.guard;
+  private readonly stopForHost=()=>this.stop();
+  constructor(private readonly source = 'Sakura Atelier') {this.host?.signal.addEventListener('abort',this.stopForHost,{once:true});}
   private captured?: CapturedExecutor;
   private active = new Set<vscode.TaskExecution>();
   private pending = new Set<() => void>();
@@ -21,7 +24,9 @@ export class TaskExecutor implements vscode.Disposable, ExecutionBackend {
     try { await work(); return true; } finally { this.locked = false; }
   }
   async run(plan: RunPlan, folder?: vscode.WorkspaceFolder): Promise<void> {
+    this.host?.assert();
     for (const step of plan.steps) {
+      this.host?.assert();
       if (this.stopped || this.disposed) { throw new RunnerError('Run stopped.'); }
       const command = await resolveTool(step.command, step.cwd,processEnvironment(step.env));
       if (step.terminal === false) { this.captured ??= new CapturedExecutor(); await this.captured.run({ ...step, command }); }
@@ -35,6 +40,7 @@ export class TaskExecutor implements vscode.Disposable, ExecutionBackend {
     return this.execute(task, execution => execution.task.definition.sakuraId === id);
   }
   async runExisting(task: vscode.Task): Promise<void> {
+    this.host?.assert();
     if (task.isBackground) { throw new RunnerError('Background tasks are not supported as run targets. Use a foreground run task.', true); }
     if (vscode.tasks.taskExecutions.some(x => x.task.name === task.name && x.task.scope === task.scope)) { throw new RunnerError(`Task "${task.name}" is already running.`); }
     await this.execute(task, execution => this.active.has(execution));
@@ -81,5 +87,5 @@ export class TaskExecutor implements vscode.Disposable, ExecutionBackend {
     this.active.clear();
   }
   async shutdown(): Promise<void> { this.dispose(); await this.captured?.shutdown(); }
-  dispose(): void { this.disposed = true; this.stop(); }
+  dispose(): void { this.host?.signal.removeEventListener('abort',this.stopForHost);this.disposed = true; this.stop(); }
 }

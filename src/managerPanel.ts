@@ -1,3 +1,4 @@
+import { hostToolchains } from './environment/registryAccess';
 import { ui } from "./ui";
 import * as vscode from "vscode";
 import * as path from "node:path";
@@ -32,6 +33,7 @@ export class ManagerPanel implements vscode.Disposable {
   private sdk: SdkManager;
   private discovered = new Map<string, LocalToolchain>();
   private ready = false;
+  private disposed = false;
   private initializing = false;
   private mode = "configurations";
   private pendingAdd = false;
@@ -68,6 +70,7 @@ export class ManagerPanel implements vscode.Disposable {
     this.panel.webview.html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource}; font-src ${this.panel.webview.cspSource}; script-src 'nonce-${nonce}';"><link href="${uri("codicon.css")}" rel="stylesheet"><link href="${uri("manager.css")}" rel="stylesheet"></head><body><div id="app"></div><script nonce="${nonce}" src="${uri("localization.js")}"></script><script nonce="${nonce}" src="${uri("templatePicker.js")}"></script><script nonce="${nonce}" src="${uri("autosave.js")}"></script><script nonce="${nonce}" src="${uri("manager.js")}"></script></body></html>`;
     this.subscriptions.push(
       this.panel.onDidDispose(() => {
+        this.disposed = true;
         void this.flushOnClose();
         this.sdk.dispose();
         for (const sub of this.subscriptions) {
@@ -76,6 +79,8 @@ export class ManagerPanel implements vscode.Disposable {
         closed();
       }),
     );
+    const registry = hostToolchains();
+    if (registry) { this.subscriptions.push(registry.subscribe(() => { void this.sendTools().catch(error => console.error('Sakura Atelier SDK UI:', error)); })); }
     this.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration("sakuraAtelier.language")) {
@@ -113,7 +118,7 @@ export class ManagerPanel implements vscode.Disposable {
           type: "mode",
           mode,
           add,
-          sdkStatus: this.sdk.status,
+          sdkStatus: this.sdkStatus(),
           file: editor.file,
           language: editor.language,
         });
@@ -168,7 +173,7 @@ export class ManagerPanel implements vscode.Disposable {
       })),
       toolchains: tools,
       launch: await launchConfigurations(this.editor.folder),
-      sdkStatus: this.sdk.status,
+      sdkStatus: this.sdkStatus(),
       sdkHelp: this.sdk.helpUrl,
       pythonStatus: this.controller.python.mismatch,
       terminalActivation: {
@@ -480,12 +485,16 @@ export class ManagerPanel implements vscode.Disposable {
       this.discovered.set(tool.id, tool);
     }
   }
+  private sdkStatus(): string {
+    const snapshot = hostToolchains()?.snapshot();
+    return this.sdk.status + (snapshot ? ` · ${snapshot.host.label} · ${snapshot.message} · ${snapshot.lastScanAt ?? '尚未扫描'}` : '');
+  }
   private async sendTools(): Promise<void> {
-    if (this.editor) {
+    if (this.editor && !this.disposed) {
       await this.panel.webview.postMessage({
         type: "toolsRefreshed",
         tools: this.controller.store.toolchains(this.editor.folder),
-        sdkStatus: this.sdk.status,
+        sdkStatus: this.sdkStatus(),
       });
       await this.sendTemplates();
     }
@@ -1035,6 +1044,7 @@ export class ManagerPanel implements vscode.Disposable {
       return;
     }
     if (m.type === "refreshTools") {
+      await hostToolchains()?.refresh();
       await this.discoverAll();
       await this.sendTools();
       return;

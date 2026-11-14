@@ -1,3 +1,4 @@
+import { hostToolchains } from './environment/registryAccess';
 import * as vscode from "vscode";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -104,11 +105,11 @@ export class ConfigurationStore {
     }
   }
   toolchains(folder?: vscode.WorkspaceFolder): LocalToolchain[] {
-    return this.context.globalState
-      .get<LocalToolchain[]>("atelier.toolchains", [])
-      .filter(
-        (t) => !t.project || !folder || t.project === folder.uri.toString(),
-      );
+    const registry = hostToolchains();
+    const legacy = this.context.globalState.get<LocalToolchain[]>("atelier.toolchains", []).filter(t => !t.project || !folder || t.project === folder.uri.toString());
+    const visible = registry && registry.guard.environment.kind !== 'local' ? [] : legacy;
+    const global = registry?.asLocalToolchains(folder?.uri.toString() ?? '') ?? [];
+    return [...new Map([...visible, ...global].map(t => [t.id, t])).values()];
   }
   async putToolchains(
     toolchains: LocalToolchain[],
@@ -124,6 +125,8 @@ export class ConfigurationStore {
       ...others,
       ...toolchains,
     ]);
+    const registry = hostToolchains();
+    if (registry) { for (const tool of toolchains) { await registry.add(tool, tool.manager === 'custom'); } }
   }
   defaultToolchain(language: string, folder: vscode.WorkspaceFolder): string {
     return (

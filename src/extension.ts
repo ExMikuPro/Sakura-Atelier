@@ -1,3 +1,4 @@
+import { startHostToolchains } from './environment/hostServices';
 import { language } from './i18n';
 import { ui } from './ui';
 import * as vscode from 'vscode';
@@ -13,6 +14,7 @@ import { initializeEmbeddedState, registerEmbeddedEditors } from './embedded/edi
 let executor: TaskExecutor | undefined;
 let controller: AtelierController | undefined;
 export function activate(context: vscode.ExtensionContext): void {
+  context.subscriptions.push(startHostToolchains(context));
   executor = new TaskExecutor();
   controller = new AtelierController(context,executor,mode=>run(mode,()=>controller!.openManager()));
   context.subscriptions.push(executor,controller);

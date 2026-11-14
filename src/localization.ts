@@ -1,6 +1,12 @@
 /** Shared parameterized messages for the extension host and Webview. English keys are the fallback. */
 export type UiLanguage = "zh-cn" | "en";
 export const chinese: Record<string, string> = {
+  "Target host: {0} · {1}/{2}": "目标环境：{0} · {1}/{2}",
+  "Installation scope: {0}": "安装范围：{0}",
+  "Current container only": "当前容器内部，不修改容器宿主",
+  "Current target host": "当前目标宿主",
+  "Privileges: {0}": "权限：{0}",
+  "Confirmed by the system in the terminal": "由终端中的系统权限机制确认",
   "New Embedded Project...": "新建嵌入式项目…",
   "Run / Debug Configurations": "运行 / 调试配置",
   "Sakura Atelier · one configuration for running, debugging and testing":
