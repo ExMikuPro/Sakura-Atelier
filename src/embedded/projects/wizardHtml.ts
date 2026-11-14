@@ -44,6 +44,7 @@ h2 { font-size: .8em; text-transform: uppercase; letter-spacing: .04em; color: v
 .tab { border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border)); background: transparent; color: inherit; border-radius: 10px; padding: 2px 10px; cursor: pointer; font: inherit; }
 .tab[aria-pressed="true"] { background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); border-color: transparent; }
 .search { display: flex; gap: 6px; }
+.project-files { padding-left: 20px; overflow-wrap: anywhere; }
 input[type=text], select { width: 100%; font: inherit; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, transparent); padding: 4px 8px; border-radius: 2px; }
 input:focus-visible, select:focus-visible, button:focus-visible, .item:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
 .rows { flex: 1; overflow: auto; margin: 0 -16px; } .row { display: flex; align-items: center; } .row .item { flex: 1; min-width: 0; }
@@ -79,7 +80,10 @@ const L = k => (view && view.labels[k]) || k;
 function renderNav() {
   const nav = document.getElementById('nav'); nav.replaceChildren();
   nav.append(el('h2', {}, L('Project types')));
-  for (const t of view.templates) nav.append(el('button', { class: 'item', type: 'button', 'aria-pressed': t.selected, title: t.description, on: { click: () => send({ type: 'selectTemplate', id: t.id }) } }, icon(t.icon), el('span', { class: 'grow name' }, t.label)));
+  for (const category of ['general', 'embedded']) {
+    nav.append(el('h2', {}, L(category === 'general' ? 'Programming languages' : 'Embedded projects')));
+    for (const t of view.templates.filter(t => t.category === category)) nav.append(el('button', { class: 'item', type: 'button', 'aria-pressed': t.selected, title: t.description, on: { click: () => send({ type: 'selectTemplate', id: t.id }) } }, icon(t.icon), el('span', { class: 'grow name' }, t.label)));
+  }
   nav.append(el('h2', {}, L('My favorite templates')));
   for (const f of view.favoriteTemplates) {
     const warn = f.problems.length > 0;
@@ -90,9 +94,13 @@ function renderNav() {
 }
 function renderList() {
   const list = document.getElementById('list');
+  if (!view.needsDevice) {
+    list.replaceChildren(el('h1', {}, L('New project')), el('p', {}, view.description), el('h2', {}, L('Files to create')), el('ul', { class: 'project-files' }, view.projectFiles.map(file => el('li', {}, file))));
+    return;
+  }
   let search = document.getElementById('search');
   if (!search) {
-    list.replaceChildren(el('h1', {}, L('New embedded project')), el('div', { class: 'search' }, el('input', { id: 'search', type: 'text', 'aria-label': L('Search by name, part number, vendor, platform or board id'), placeholder: L('Search by name, part number, vendor, platform or board id') })), el('div', { class: 'tabs', id: 'tabs', role: 'group' }), el('div', { class: 'rows', id: 'rows', role: 'listbox' }), el('div', { id: 'listfoot' }));
+    list.replaceChildren(el('h1', {}, L('New project')), el('div', { class: 'search' }, el('input', { id: 'search', type: 'text', 'aria-label': L('Search by name, part number, vendor, platform or board id'), placeholder: L('Search by name, part number, vendor, platform or board id') })), el('div', { class: 'tabs', id: 'tabs', role: 'group' }), el('div', { class: 'rows', id: 'rows', role: 'listbox' }), el('div', { id: 'listfoot' }));
     search = document.getElementById('search');
     search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => send({ type: 'search', value: search.value }), 200); });
   }
@@ -121,7 +129,7 @@ function renderDetail() {
   const d = document.getElementById('detail'); d.replaceChildren();
   d.append(el('h1', {}, L('Steps')), el('ol', { class: 'steps' }, view.steps.map(s => el('li', { class: s.done ? 'done' : '' }, icon(s.done ? 'pass' : 'circle-outline'), s.label))));
   if (view.notice) d.append(el('div', { class: 'notice' }, view.notice));
-  d.append(el('div', { class: 'field' }, el('label', {}, L('Device')), el('div', {}, view.device ? view.device.name + '  ' : L('Select a device'), view.device ? el('span', { class: 'sub' }, [view.device.id, view.device.subtitle].filter(Boolean).join(' · ')) : null)));
+  if (view.needsDevice) d.append(el('div', { class: 'field' }, el('label', {}, L('Device')), el('div', {}, view.device ? view.device.name + '  ' : L('Select a device'), view.device ? el('span', { class: 'sub' }, [view.device.id, view.device.subtitle].filter(Boolean).join(' · ')) : null)));
   if (view.needsFramework) {
     const select = el('select', { id: 'framework', 'aria-label': L('Framework'), on: { change: e => send({ type: 'framework', value: e.target.value }) } }, el('option', { value: '' }, L('Choose...')), view.frameworks.map(f => el('option', { value: f, selected: f === view.framework }, f)));
     d.append(el('div', { class: 'field' }, el('label', { for: 'framework' }, L('Framework')), select));
@@ -142,7 +150,7 @@ function renderDetail() {
     el('button', { class: 'btn secondary', type: 'button', disabled: !view.templateFavorite.can, 'aria-pressed': view.templateFavorite.saved, on: { click: () => send({ type: 'toggleTemplateFavorite' }) } }, icon(view.templateFavorite.saved ? 'star-full' : 'star-empty'), ' ' + (view.templateFavorite.saved ? L('Remove this favorite configuration') : L('Save this configuration as favorite'))),
     el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'cancel' }) } }, L('Cancel'))));
 }
-function render() { document.title = L('New embedded project'); renderNav(); renderList(); renderDetail(); }
+function render() { document.title = L('New project'); renderNav(); renderList(); renderDetail(); }
 window.addEventListener('message', e => {
   if (!e.data || e.data.type !== 'view' || e.data.clientRevision < clientRevision) return;
   const active = document.activeElement; const focus = active && active.id;

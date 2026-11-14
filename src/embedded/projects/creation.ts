@@ -1,3 +1,5 @@
+import { projectScaffold, runtimeForProject } from '../../projectScaffolds';
+import type { RuntimeLanguage } from '../../configuration';
 import * as path from 'node:path';
 import { DeviceRef, normalizeRef } from '../devices/model';
 import type { PioBoardInfo } from '../devices/pioBoards';
@@ -17,7 +19,7 @@ export interface CreationOptions { monitorSpeed?: string; sampleCode?: boolean; 
 export interface CreationContext {
   template: ProjectTemplate | undefined;
   /** Tools as found right now; never stored with a template. */
-  tools: { pio?: string; cubemx?: string };
+  tools: { pio?: string; cubemx?: string; runtimes?: Partial<Record<RuntimeLanguage, string>> };
   /** Boards known to PlatformIO right now, by id. */
   boards: ReadonlyMap<string, PioBoardInfo>;
   fs: { exists(file: string): Promise<boolean>; isDirectory(file: string): Promise<boolean> };
@@ -31,9 +33,10 @@ export type CreationStep =
   | { kind: 'mkdir'; path: string }
   | { kind: 'run'; command: string; args: string[]; cwd: string; label: string }
   | { kind: 'launch-cubemx'; command: string; args: string[]; confirm: string }
+  | { kind: 'write'; path: string; content: string }
   | { kind: 'open'; path: string };
 
-export interface PlanWarning { code: 'remote-cubemx' | 'no-cubemx'; message: string }
+export interface PlanWarning { code: 'remote-cubemx' | 'no-cubemx' | 'no-runtime' | 'project-dependencies'; message: string }
 export interface CreationPlan { target: string; steps: CreationStep[]; blockers: Blocker[]; warnings: PlanWarning[]; preview: string[] }
 
 const reserved = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
@@ -76,6 +79,25 @@ export async function planCreation(request: CreationRequest, context: CreationCo
   if (!path.isAbsolute(request.parentDir) || !await context.fs.isDirectory(request.parentDir)) { block('parent', 'The save location must be an existing folder.'); }
   else if (!nameProblem && await context.fs.exists(target)) { block('exists', `"${request.name}" already exists in this folder. Choose another name; existing files are never overwritten.`); }
 
+  if (template.backend === 'general' && template.language) {
+    const files = projectScaffold(template.language, request.name || 'my-project');
+    if (!context.tools.runtimes?.[runtimeForProject(template.language)]) warnings.push({ code: 'no-runtime', message: 'The project can be created; configure its SDK before Run or Debug.' });
+    if (template.language === 'typescript') warnings.push({ code: 'project-dependencies', message: 'Install the declared project dependencies before Run. Creation does not install them.' });
+    if (!blockers.length) {
+      steps.push({ kind: 'mkdir', path: target });
+      const directories = new Set<string>();
+      for (const file of files) {
+        let dir = path.dirname(file.path);
+        while (dir !== '.') { directories.add(dir); dir = path.dirname(dir); }
+      }
+      for (const dir of [...directories].sort((a, b) => a.split(path.sep).length - b.split(path.sep).length)) steps.push({ kind: 'mkdir', path: path.join(target, dir) });
+      for (const file of files) steps.push({ kind: 'write', path: path.join(target, file.path), content: file.content });
+      steps.push({ kind: 'open', path: target });
+    }
+    preview.push(template.label, target, ...files.map(file => file.path));
+    return { target, steps, blockers, warnings, preview };
+  }
+
   const device = normalizeRef(request.device);
   if (!device) { block('device-required', 'Choose a device first.'); }
   else if (!template.deviceKinds.includes(device.kind)) { block('device-kind', `This template needs ${template.deviceKinds.join(' or ')}, not ${device.kind}. An STM32 MCU or ST board name is never used as a PlatformIO board id.`); }
@@ -114,6 +136,8 @@ export interface CreationDeps {
   /** Must fail when the folder exists (not recursive), so a folder created after planning is never reused. */
   mkdir(folder: string): Promise<void>;
   run(command: string, args: string[], cwd: string): Promise<void>;
+  /** Must use exclusive creation; never overwrite an existing file. */
+  writeFile?(file: string, content: string): Promise<void>;
   confirm(message: string): Promise<boolean>;
   launch(command: string, args: string[]): void;
 }
@@ -125,6 +149,7 @@ export async function executeCreation(plan: CreationPlan, deps: CreationDeps): P
   let launched = false; let open: string | undefined;
   for (const step of plan.steps) {
     if (step.kind === 'mkdir') { await deps.mkdir(step.path); }
+    else if (step.kind === 'write') { if (!deps.writeFile) throw new Error('Project file writer is unavailable.'); await deps.writeFile(step.path, step.content); }
     else if (step.kind === 'run') { await deps.run(step.command, step.args, step.cwd); }
     else if (step.kind === 'launch-cubemx') { if (await deps.confirm(step.confirm)) { deps.launch(step.command, step.args); launched = true; } }
     else { open = step.path; }

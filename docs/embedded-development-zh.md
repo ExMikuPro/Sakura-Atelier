@@ -2,12 +2,16 @@
 
 Sakura Atelier 为 PlatformIO 和 STM32 项目提供统一入口。实际的构建、烧录、调试仍由官方工具完成：PlatformIO Core、STM32CubeMX、STM32CubeProgrammer、Arm GNU Toolchain，以及 PlatformIO IDE、Cortex-Debug 等官方或社区扩展。Sakura Atelier 不修改系统环境变量，不修改其他扩展的文件，也不自行实现调试协议。
 
+统一向导也提供常用语言的基础项目模板，详见 [新建项目](PROJECT_CREATION.md)。
+
 ## 新建项目
 
 入口（均不需要先打开工作区）：
 
-- 菜单“文件 → 新建文件…” → **Sakura Atelier：新建项目**（通过 VS Code 官方的 `file/newFile` 菜单贡献点添加）
-- 命令面板 → **Sakura Atelier：新建项目**
+- 菜单“文件 → 新建文件…” → **Sakura Atelier：新建项目…**（通过 VS Code 官方的 `file/newFile` 菜单贡献点添加）
+- 命令面板 → **Sakura Atelier：新建项目…**
+
+`file/newFile` 对应“新建文件…”打开的类型选择器，不是在 macOS 原生“文件”菜单中增加一级菜单项。
 
 向导分三栏：左侧选择项目类型和“我的收藏模板”，中间选择器件，右侧依次完成框架、SDK 检查、名称与目录、预览并创建。
 

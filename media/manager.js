@@ -787,7 +787,7 @@
       () => addConfiguration({ currentTarget: add }),
       "add",
     );
-    nav(configs, "New Embedded Project...", () => send("newProject"), "new-folder");
+    nav(configs, "New Project...", () => send("newProject"), "new-folder");
     nav(configs, "Project Dependencies...", () => send("checkDependencies", { id: selected }), "package");
     add.id = "add-configuration";
     add.setAttribute("aria-haspopup", "dialog");
@@ -1160,7 +1160,7 @@
     const none = el("option", "Use project default");
     none.value = "";
     choices.append(none);
-    for (const t of tools.filter(
+    for (const t of visibleSdkInstallations(tools, selectedSDK).filter(
       (t) =>
         t.language === c.language ||
         (t.language === "node" &&
@@ -1457,6 +1457,31 @@
     );
     form.append(advanced);
   }
+  // Registry aliases keep old configuration references working; show one installation per identity.
+  function visibleSdkInstallations(entries, preferredId) {
+    const identity = (tool) => JSON.stringify([
+      tool.hostId || "", tool.language,
+      tool.language === "python" || tool.rustToolchain ? tool.executable : tool.canonicalPath || tool.executable,
+      tool.sdkVersion || "", tool.rustToolchain || "",
+    ]);
+    const owners = new Map();
+    for (const tool of entries) {
+      if (!tool.canonicalPath || !Array.isArray(tool.aliases)) continue;
+      const key = identity(tool);
+      owners.set(tool.id, key);
+      for (const alias of tool.aliases) {
+        if (typeof alias?.id === "string" && (!alias.workspace || alias.workspace === state.folder)) owners.set(alias.id, key);
+      }
+    }
+    const installations = new Map();
+    for (const tool of entries) {
+      const key = owners.get(tool.id) || (tool.executable ? identity(tool) : tool.id);
+      const previous = installations.get(key);
+      const canonical = tool.canonicalPath && Array.isArray(tool.aliases) && !tool.aliases.some(alias => alias.id === tool.id);
+      if (!previous || tool.id === preferredId || (previous.id !== preferredId && canonical)) installations.set(key, tool);
+    }
+    return [...installations.values()];
+  }
   function renderTools(main) {
     const names = {
       go: "Go SDK",
@@ -1480,14 +1505,14 @@
       const table = el("table", undefined, "environment-table");
       for (const [id, label] of Object.entries(names)) {
         const row = el("tr");
-        const installed = tools.filter((t) => t.language === id);
+        const installed = visibleSdkInstallations(tools).filter((t) => t.language === id);
         const cell = el("td", label);
         const summary = el(
           "td",
           installed.length
             ? T("Configured") +
                 " · " +
-                installed.map((t) => t.version || t.name).join(", ")
+                [...new Set(installed.map((t) => t.version || t.name))].join(", ")
             : T("No SDK configured"),
         );
         const action = el("td");
@@ -1506,11 +1531,11 @@
         row.append(cell, summary, action);
         table.append(row);
       }
-      list.append(table);
+      main.append(table);
       return;
     }
     main.append(el("h2", names[language] || language));
-    const matches = tools.filter((t) => t.language === language);
+    const matches = visibleSdkInstallations(tools, selectedTool).filter((t) => t.language === language);
     let tool = matches.find((t) => t.id === selectedTool) || matches[0];
     if (tool) selectedTool = tool.id;
     const selector = el("select");
@@ -1921,7 +1946,8 @@
       }
       status(session()?.state || "clean");
     } else if (message.type === "toolsRefreshed") {
-      if (!flush()) return;
+      // Initial state includes the latest SDK snapshot; early background messages cannot update an uninitialized editor.
+      if (!state || !flush()) return;
       const map = new Map([...message.tools, ...tools].map((t) => [t.id, t]));
       tools = [...map.values()];
       state.sdkStatus = message.sdkStatus;

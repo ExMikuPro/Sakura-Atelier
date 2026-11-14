@@ -647,9 +647,10 @@
     "lint": "eslint src test scripts",
     "test": "npm run compile && npm run lint && node --test out/test/*.test.js",
     "test:integration": "npm run compile && node scripts/integration.cjs",
-    "package": "npm run compile && vsce package --no-dependencies --allow-missing-repository --out sakura-atelier-0.1.0.vsix && node scripts/verify-package.cjs",
+    "package": "npm run compile && vsce package --no-dependencies --baseContentUrl https://github.com/ExMikuPro/Sakura-Atelier/blob/dev/ --baseImagesUrl https://github.com/ExMikuPro/Sakura-Atelier/raw/dev/ --out sakura-atelier-0.1.0.vsix && node scripts/verify-package.cjs",
     "test:ui": "npm run compile && playwright test",
-    "test:wizard": "npm run compile && node scripts/wizard-integration.cjs"
+    "test:wizard": "npm run compile && node scripts/wizard-integration.cjs",
+    "test:projects": "npm run compile && node scripts/projects-integration.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",
@@ -668,5 +669,9 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "icon": "media/icon.png"
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ExMikuPro/Sakura-Atelier.git"
+  }
 }

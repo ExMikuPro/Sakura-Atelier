@@ -1,3 +1,4 @@
+import { projectLanguages, runtimeForProject } from '../../projectScaffolds';
 import type { DeviceFavorites } from '../devices/favorites';
 import type { RecentDevices } from '../devices/recents';
 import { DeviceInfo, DeviceKind, DeviceRef, cleanName, deviceKey, normalizeRef } from '../devices/model';
@@ -75,7 +76,8 @@ export function parseMessage(raw: unknown): WizardMessage | undefined {
 
 export interface WizardView {
   language: UiLanguage; labels: Record<string, string>;
-  templates: { id: string; label: string; description: string; icon: string; selected: boolean }[];
+  needsDevice: boolean; projectFiles: string[]; description: string;
+  templates: { id: string; label: string; description: string; icon: string; selected: boolean; category: 'general' | 'embedded' }[];
   favoriteTemplates: { id: string; name: string; problems: { text: string; fix: string }[] }[];
   sections: { id: DeviceSection; label: string; icon: string; count: number; selected: boolean }[];
   query: string; loading: boolean; listMessage: string;
@@ -179,13 +181,14 @@ export class WizardModel {
     const listMessage = !this.deps.loaded() ? t('Loading devices...') : rows.length ? '' : s.query ? t('No matching devices') : section === 'favorites' ? t('No favorites yet. Click the star next to a device.') : section === 'recent' ? t('No recent devices. Devices are recorded after a project is created.') : t('No matching devices');
     const hasDevice = !!s.device; const hasFramework = !template?.needsFramework || !!s.framework;
     const view: WizardView = {
+      needsDevice: kinds.length > 0, projectFiles: template?.backend === 'general' ? plan.preview.slice(2) : [], description: t(template?.description ?? ''),
       language, labels: Object.fromEntries(wizardLabelKeys.map(k => [k, t(k)])),
-      templates: this.deps.projectTemplates.values().map(p => ({ id: p.id, label: t(p.label), description: t(p.description), icon: p.icon, selected: p.id === s.templateId })),
+      templates: this.deps.projectTemplates.values().map(p => ({ id: p.id, label: t(p.label), description: t(p.description), icon: p.icon, selected: p.id === s.templateId, category: p.backend === 'general' ? 'general' as const : 'embedded' as const })),
       favoriteTemplates: this.deps.templates.list().map(f => {
         const restored = restoreFavoriteTemplate(f, { templates: this.deps.projectTemplates, boards, boardsAvailable: snapshot.status.get('pio-board')?.state !== 'unavailable' });
         return { id: f.id, name: f.name, problems: restored.problems.map(p => ({ text: t(`problem.${p.code}`), fix: t(`fix.${p.code}`) })) };
       }),
-      sections: visibleSections.map(id => ({ id, label: t(sectionLabels[id]), icon: sectionIcons[id], count: count(id), selected: id === (visibleSections.includes(section) ? section : 'all') })),
+      sections: (kinds.length ? visibleSections : []).map(id => ({ id, label: t(sectionLabels[id]), icon: sectionIcons[id], count: count(id), selected: id === (visibleSections.includes(section) ? section : 'all') })),
       query: s.query, loading: !this.deps.loaded(), listMessage,
       rows: rows.map(r => ({
         kind: r.device.kind, id: r.device.id, name: r.device.name, subtitle: subtitle(r.device), favorite: r.favorite, selected: deviceKey(r.device) === selectedKey,
@@ -196,19 +199,20 @@ export class WizardModel {
       needsFramework: !!template?.needsFramework, frameworks: board?.frameworks ?? [], framework: s.framework,
       options: s.options, generator: template?.buildSystem === 'cubemx' ? ['cmake', 'makefile', 'cubeide'] : [],
       tools: [
+        ...(template?.language ? [{ label: projectLanguages.find(p => p.language === template.language)?.sdk ?? template.language, found: !!ctx.tools.runtimes?.[runtimeForProject(template.language)], path: ctx.tools.runtimes?.[runtimeForProject(template.language)] }] : []),
         ...(template?.backend === 'platformio' ? [{ label: t('PlatformIO Core'), found: !!ctx.tools.pio, ...(ctx.tools.pio ? { path: ctx.tools.pio } : {}) }] : []),
         ...(template?.backend === 'stm32' ? [{ label: t('STM32CubeMX'), found: !!ctx.tools.cubemx, ...(ctx.tools.cubemx ? { path: ctx.tools.cubemx } : {}) }] : [])
       ],
       name: s.name, parentDir: s.parentDir,
       steps: [
-        { label: t('Project type'), done: !!template }, { label: t('Choose a device'), done: hasDevice || template?.buildSystem === 'existing' }, { label: t('Framework and build system'), done: hasFramework },
-        { label: t('Check the SDK and toolchain'), done: template?.backend === 'platformio' ? !!ctx.tools.pio : true },
+        { label: t('Project type'), done: !!template }, ...(kinds.length ? [{ label: t('Choose a device'), done: hasDevice }] : []), { label: t('Framework and build system'), done: hasFramework },
+        { label: t('Check the SDK and toolchain'), done: template?.language ? !!ctx.tools.runtimes?.[runtimeForProject(template.language)] : template?.backend === 'platformio' ? !!ctx.tools.pio : true },
         { label: t('Name and location'), done: !!s.name && !nameProblem && !!s.parentDir }, { label: t('Preview and create'), done: !plan.blockers.length && !!s.name && !!s.parentDir }
       ],
       blockers: shown.map(b => t(`blocker.${b.code}`)),
       warnings: plan.warnings.map(w => t(`warning.${w.code}`)), preview: plan.preview,
       canCreate: !plan.blockers.length && plan.steps.length > 0 && (template?.buildSystem === 'existing' || (!!s.name && !!s.parentDir)),
-      templateFavorite: { saved: this.deps.templates.isFavorite(this.templateInput()), can: !!s.device && hasFramework },
+      templateFavorite: { saved: this.deps.templates.isFavorite(this.templateInput()), can: template?.backend === 'general' || (!!s.device && hasFramework) },
       ...(s.restoredFrom ? { notice: t('Restored from "{0}".', s.restoredFrom) } : {}),
       ...(template?.deviceKinds.includes('stm32-mcu') ? { manualKind: 'stm32-mcu' as const } : {}),
       hasRecents: recents.length > 0

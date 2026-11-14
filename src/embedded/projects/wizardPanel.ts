@@ -1,3 +1,5 @@
+import { hostToolchains } from '../../environment/registryAccess';
+import type { CreationContext } from './creation';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
@@ -45,7 +47,7 @@ class WizardPanel {
   private clientRevision = 0;
   private viewGeneration = 0;
   private completed = false;
-  private tools: { pio?: string; cubemx?: string } = {};
+  private tools: CreationContext['tools'] = {};
   private readonly language = () => resolveUiLanguage(vscode.workspace.getConfiguration('sakuraAtelier').get<string>('language', 'zh-cn'), vscode.env.language);
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly onDispose: () => void) {
@@ -59,10 +61,10 @@ class WizardPanel {
       creation: () => ({ tools: this.tools, fs: { exists: p => fs.stat(p).then(() => true, () => false), isDirectory: p => fs.stat(p).then(s => s.isDirectory(), () => false) }, isStm32Project: async f => !!await stm32Backend.detect(f, host), remote: !!vscode.env.remoteName }),
       language: this.language()
     }, this.initialState());
-    this.panel = vscode.window.createWebviewPanel('sakuraAtelier.newProject', wizardText(this.language(), 'New embedded project'), vscode.ViewColumn.Active, { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')], retainContextWhenHidden: false });
+    this.panel = vscode.window.createWebviewPanel('sakuraAtelier.newProject', wizardText(this.language(), 'New project'), vscode.ViewColumn.Active, { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')], retainContextWhenHidden: false });
     this.panel.onDidDispose(() => { this.disposed = true; if (!this.completed) { void this.saveDraft().catch(error => { void vscode.window.showWarningMessage(`Sakura Atelier: Could not save project draft: ${String(error)}`); }); } this.onDispose(); });
     this.panel.webview.onDidReceiveMessage(message => { void this.handle(message); });
-    this.panel.onDidChangeViewState(() => { if (this.panel.visible) { void this.post(); } });
+    this.panel.onDidChangeViewState(() => { if (this.panel.visible && !this.disposed) { void this.refreshTools().then(() => this.post()).catch(error => console.error('Sakura Atelier project SDK refresh:', error)); } });
   }
 
   reveal(): void { this.panel.reveal(); }
@@ -71,20 +73,27 @@ class WizardPanel {
     const draft = this.context.globalState.get<unknown>(draftKey);
     const defaults = this.context.globalState.get<Defaults>(defaultsKey, {});
     defaults.parentDir ??= vscode.workspace.workspaceFolders?.find(f => f.uri.scheme === 'file')?.uri.fsPath;
-    return { ...(draft && typeof draft === 'object' ? draft : {}), ...(typeof defaults.parentDir === 'string' && !(draft as { parentDir?: string } | undefined)?.parentDir ? { parentDir: defaults.parentDir } : {}) };
+    const active = vscode.window.activeTextEditor?.document.languageId;
+    const language = active === 'javascript' ? 'node' : active;
+    const initialTemplate = builtinProjectTemplates.find(t => t.language === language)?.id ?? 'general.python';
+    return { templateId: initialTemplate, ...(draft && typeof draft === 'object' ? draft : {}), ...(typeof defaults.parentDir === 'string' && !(draft as { parentDir?: string } | undefined)?.parentDir ? { parentDir: defaults.parentDir } : {}) };
   }
   private async saveDraft(): Promise<void> { await this.context.globalState.update(draftKey, this.model.state); }
 
   async start(): Promise<void> {
     const nonce = randomBytes(16).toString('base64');
-    this.panel.webview.html = renderWizardHtml({ nonce, cspSource: this.panel.webview.cspSource, codiconUri: this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'codicon.css')).toString(), cssLanguage: this.language() === 'zh-cn' ? 'zh-CN' : 'en', title: wizardText(this.language(), 'New embedded project') });
+    this.panel.webview.html = renderWizardHtml({ nonce, cspSource: this.panel.webview.cspSource, codiconUri: this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'codicon.css')).toString(), cssLanguage: this.language() === 'zh-cn' ? 'zh-CN' : 'en', title: wizardText(this.language(), 'New project') });
     await this.refreshTools();
     void deviceCatalog(this.context).load(false).then(() => { this.loaded = true; return this.post(); }).catch(error => { if (!this.disposed) { void vscode.window.showErrorMessage(`Sakura Atelier: Could not load devices: ${String(error)}`); } });
   }
 
   private async refreshTools(): Promise<void> {
     const statuses = await createToolRegistry(this.context).discover();
-    this.tools = { pio: statuses.platformio.selected?.path, cubemx: statuses.stm32cubemx.selected?.path };
+    const registry = hostToolchains();
+    await registry?.settled();
+    const runtimes: NonNullable<CreationContext['tools']['runtimes']> = {};
+    for (const tool of registry?.snapshot().tools ?? []) { if (!runtimes[tool.language] && (tool.available || tool.manual) && await fs.stat(tool.executable).then(s => s.isFile(), () => false)) runtimes[tool.language] = tool.executable; }
+    this.tools = { runtimes, pio: statuses.platformio.selected?.path, cubemx: statuses.stm32cubemx.selected?.path };
   }
 
   private async post(extra?: { notice?: string }): Promise<void> {
@@ -122,7 +131,7 @@ class WizardPanel {
         case 'clearRecents': await new RecentDevices(this.context.globalState).clear(); break;
         case 'addManual': { const error = await this.model.addManual(message.kind, message.text); if (error) { void vscode.window.showWarningMessage(`Sakura Atelier: ${error}`); } break; }
         case 'reload': this.loaded = false; await this.post(); await deviceCatalog(this.context).load(true); await this.refreshTools(); this.loaded = true; break;
-        case 'locateTools': await vscode.commands.executeCommand('sakuraAtelier.embedded.manageTools'); await this.refreshTools(); break;
+        case 'locateTools': await vscode.commands.executeCommand(builtinProjectTemplates.find(t => t.id === this.model.state.templateId)?.backend === 'general' ? 'sakuraAtelier.manageToolchains' : 'sakuraAtelier.embedded.manageTools'); await this.refreshTools(); break;
         case 'browse': {
           const picked = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, openLabel: t('Browse...'), defaultUri: this.model.state.parentDir ? vscode.Uri.file(this.model.state.parentDir) : undefined });
           if (picked?.[0]) { this.model.setParentDir(picked[0].fsPath); }
@@ -147,7 +156,7 @@ class WizardPanel {
     if (plan.blockers.length || !plan.steps.length) { await this.post(); return; }
     try {
       const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: t('Create project') }, () => executeCreation(plan, {
-        mkdir: p => fs.mkdir(p), run: async (c, a, cwd) => { await nodeRunner(c, a, cwd, 120000); },
+        mkdir: p => fs.mkdir(p), writeFile: (file, content) => fs.writeFile(file, content, { flag: 'wx' }), run: async (c, a, cwd) => { await nodeRunner(c, a, cwd, 120000); },
         confirm: async message => await vscode.window.showWarningMessage(message, { modal: true }, 'OK') === 'OK',
         launch: (command, args) => { const child = spawn(command, args, { detached: true, stdio: 'ignore' }); child.once('error', e => { void vscode.window.showErrorMessage(`Sakura Atelier: ${t('Could not create the project: {0}', e.message)}`); }); child.unref(); }
       }));

@@ -17,6 +17,10 @@
 
 不绑定 F5、不修改用户快捷键或 VS Code 内部文件。未信任工作区禁止运行、调试、发现工具链和安装。启动时只做工作区范围内的项目元数据发现，不执行项目命令。
 
+## 新建项目
+
+通过“文件 → 新建文件… → Sakura Atelier：新建项目…”、命令面板或配置页导航，创建 Python、JavaScript/Node.js、TypeScript、Go、Rust、C、C++、C#、Java 基础项目。PlatformIO 与 STM32 类型保留在同一向导中。创建前展示文件清单，复用现有运行配置与 SDK 检查，保护已存在目录。详见 [新建项目](docs/PROJECT_CREATION.md)。
+
 ## 命令
 
 | 命令 ID | 用途 |

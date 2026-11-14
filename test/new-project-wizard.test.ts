@@ -199,7 +199,7 @@ test('every label, section, template, blocker, warning and problem has a Chinese
 });
 
 test('webview shell is safe and themed: nonce-only script, no inline handlers or data, theme variables, responsive, codicons, accessible stars', () => {
-  const html = renderWizardHtml({ nonce: 'NONCE', cspSource: 'vscode-resource:', codiconUri: 'vscode-resource:/media/codicon.css', cssLanguage: 'zh-CN', title: '新建嵌入式项目' });
+  const html = renderWizardHtml({ nonce: 'NONCE', cspSource: 'vscode-resource:', codiconUri: 'vscode-resource:/media/codicon.css', cssLanguage: 'zh-CN', title: '新建项目' });
   assert.ok(html.includes("script-src 'nonce-NONCE'") && html.includes("default-src 'none'") && html.includes('font-src vscode-resource:'));
   assert.ok(!/\son[a-z]+=/i.test(html.replace(/<script[\s\S]*<\/script>/, '')));
   assert.ok(html.includes('var(--vscode-editor-background)') && html.includes('@media (max-width: 900px)') && html.includes('codicon.css'));
@@ -215,7 +215,7 @@ test('the manifest adds the wizard to File > New File and the command palette, a
   const command = manifest.contributes.commands.find((c: { command: string }) => c.command === 'sakuraAtelier.newProject');
   const nls = JSON.parse(readFileSync(path.resolve(__dirname, '../../package.nls.json'), 'utf8'));
   assert.equal(command.title, '%command.sakuraAtelier.newProject%');
-  assert.equal(nls[command.title.slice(1, -1)], 'Sakura Atelier：新建嵌入式项目…');
+  assert.equal(nls[command.title.slice(1, -1)], 'Sakura Atelier：新建项目…');
   assert.ok(!JSON.stringify(manifest.contributes.menus['file/newFile']).includes('workspace'));
   assert.ok(!(manifest.contributes.menus.commandPalette ?? []).some((m: { command: string; when?: string }) => m.command === 'sakuraAtelier.newProject' && /workspace/i.test(m.when ?? '')));
   assert.deepEqual(manifest.activationEvents, ['onStartupFinished']);

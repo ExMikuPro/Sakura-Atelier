@@ -2,7 +2,14 @@ import { embeddedChinese, UiLanguage } from '../strings';
 
 /** Chinese text for the project wizard. Same English-key convention as the shared dictionary of PR #1. */
 export const wizardChinese: Record<string, string> = {
-  'New embedded project': '新建嵌入式项目',
+  'Programming languages': '编程语言', 'Embedded projects': '嵌入式项目', 'Files to create': '将创建的文件',
+  'Python project': 'Python 项目', 'JavaScript / Node.js project': 'JavaScript / Node.js 项目', 'TypeScript project': 'TypeScript 项目',
+  'Go project': 'Go 项目', 'Rust / Cargo project': 'Rust / Cargo 项目', 'C project': 'C 项目', 'C++ project': 'C++ 项目', 'C# / .NET project': 'C# / .NET 项目', 'Java project': 'Java 项目',
+  'Create source files, project metadata and a Sakura Atelier run configuration.': '创建示例代码、项目文件和现有 Sakura Atelier 运行配置。',
+  'warning.no-runtime': '项目可以创建。运行或调试前，请在开发环境中选择或配置对应 SDK。',
+  'warning.project-dependencies': 'TypeScript 项目运行前需要安装所声明的项目依赖。可通过项目依赖检查审阅安装计划。',
+
+  'New project': '新建项目',
   'Project types': '项目类型',
   'PlatformIO project': 'PlatformIO 项目',
   'STM32CubeMX project': 'STM32CubeMX 项目',
@@ -63,7 +70,7 @@ export function wizardText(language: UiLanguage, message: string, ...args: unkno
 
 /** Static labels the page needs. The page itself contains no text of its own; everything comes translated from here. */
 export const wizardLabelKeys = [
-  'New embedded project', 'Project types', 'My favorite templates', 'Search by name, part number, vendor, platform or board id', 'Reload devices', 'Clear recent devices',
+  'Programming languages', 'Embedded projects', 'Files to create', 'New project', 'Project types', 'My favorite templates', 'Search by name, part number, vendor, platform or board id', 'Reload devices', 'Clear recent devices',
   'Add to favorites', 'Remove from favorites', 'Device', 'Framework', 'Build system', 'SDK and toolchain', 'Project name', 'Save location', 'Browse...', 'Preview',
   'Create project', 'Save this configuration as favorite', 'Remove this favorite configuration', 'Select a device', 'Select a framework', 'Choose...', 'Locate...',
   'Add an STM32 part number manually', 'Add', 'Monitor speed', 'Include sample code', 'Toolchain in STM32CubeMX', 'Steps', 'Cancel', 'Found', 'Not found', 'Cannot use this favorite yet:', 'None'

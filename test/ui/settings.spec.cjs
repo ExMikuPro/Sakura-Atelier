@@ -678,7 +678,7 @@ test("undo and delayed sequential saves preserve the last user input", async ({
 });
 
 test('existing configuration navigation opens the unified embedded project wizard', async ({ page }) => {
-  await page.getByRole('treeitem', { name: '新建嵌入式项目…', exact: true }).click();
+  await page.getByRole('treeitem', { name: '新建项目…', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__uiMessages.some(message => message.type === 'newProject'))).toBe(true);
 });
 
@@ -686,4 +686,33 @@ test('existing configuration navigation requests dependency inspection without e
   await page.getByRole('treeitem', { name: '项目依赖检查与修复…', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__uiMessages.some(message => message.type === 'checkDependencies'))).toBe(true);
   expect(await page.evaluate(() => window.__uiMessages.some(message => /repair|install/i.test(message.type)))).toBe(false);
+});
+
+test('environment overview stays in the main pane and SDK aliases do not duplicate installations', async ({ page }) => {
+  const binding = { id: 'legacy-node', language: 'node', executable: '/sdk/node', name: 'Node fixture', version: '26.13.0', manager: 'system', project: '' };
+  const canonical = { ...binding, id: 'host-node', canonicalPath: '/sdk/node', hostId: 'fixture-host', aliases: [{ id: binding.id, workspace: folderName(folders[0]) }] };
+  await store.putToolchains([binding, canonical], folders[0]);
+  await page.reload();
+  await page.getByRole('treeitem', { name: '总览', exact: true }).click();
+  await expect(page.locator('#main .environment-table')).toHaveCount(1);
+  await expect(page.locator('#list .environment-table')).toHaveCount(0);
+  const row = page.locator('#main .environment-table tr').filter({ hasText: 'Node.js' });
+  expect((await row.textContent()).match(/26\.13\.0/g)).toHaveLength(1);
+  await row.getByRole('button').click();
+  await expect(page.getByRole('combobox', { name: '选择已发现的 SDK' }).locator('option')).toHaveCount(1);
+  // Display grouping must not remove SDK records or break legacy bindings.
+  expect(store.toolchains(folders[0]).map(tool => tool.id)).toEqual(['legacy-node', 'host-node']);
+  await page.setViewportSize({ width: 800, height: 850 });
+  await page.getByRole('treeitem', { name: '总览', exact: true }).click();
+  await expect(page.locator('#main .environment-table')).toBeVisible();
+  await page.screenshot({ path: path.join(os.tmpdir(), 'sakura-overview-fixed.png'), fullPage: true });
+});
+
+test('SDK discovery completing before the initial editor state cannot crash the overview', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.addEventListener('load', () => window.postMessage({ type: 'toolsRefreshed', tools: [], sdkStatus: 'early discovery' }, '*'));
+  });
+  await page.reload();
+  await page.getByRole('treeitem', { name: '总览', exact: true }).click();
+  await expect(page.locator('#main .environment-table tr')).toHaveCount(8);
 });

@@ -34,6 +34,7 @@ export class ManagerPanel implements vscode.Disposable {
   private pythonWorkflow?: ReturnType<typeof import("./environment/pythonServiceHost").createPythonEnvironmentServices>;
   private discovered = new Map<string, LocalToolchain>();
   private ready = false;
+  private stateSent = false;
   private disposed = false;
   private initializing = false;
   private mode = "configurations";
@@ -115,7 +116,7 @@ export class ManagerPanel implements vscode.Disposable {
       this.initializing = false;
     }
     if (this.ready) {
-      if (same) {
+      if (same && this.stateSent) {
         await this.panel.webview.postMessage({
           type: "mode",
           mode,
@@ -137,6 +138,7 @@ export class ManagerPanel implements vscode.Disposable {
     });
   }
   private async sendState(mode?: string, add = false): Promise<void> {
+    this.stateSent = false;
     if (!this.editor) {
       return;
     }
@@ -188,6 +190,8 @@ export class ManagerPanel implements vscode.Disposable {
       },
     });
     this.pendingAdd = false;
+    this.stateSent = true;
+    await this.sendTools();
   }
   private async catalog(contextId?: string) {
     const editor = this.editor!;
@@ -492,7 +496,7 @@ export class ManagerPanel implements vscode.Disposable {
     return this.sdk.status + (snapshot ? ` · ${snapshot.host.label} · ${snapshot.message} · ${snapshot.lastScanAt ?? '尚未扫描'}` : '');
   }
   private async sendTools(): Promise<void> {
-    if (this.editor && !this.disposed) {
+    if (this.editor && !this.disposed && this.ready && this.stateSent) {
       await this.panel.webview.postMessage({
         type: "toolsRefreshed",
         tools: this.controller.store.toolchains(this.editor.folder),

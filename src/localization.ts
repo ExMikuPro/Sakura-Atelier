@@ -13,7 +13,7 @@ export const chinese: Record<string, string> = {
   "Current target host": "当前目标宿主",
   "Privileges: {0}": "权限：{0}",
   "Confirmed by the system in the terminal": "由终端中的系统权限机制确认",
-  "New Embedded Project...": "新建嵌入式项目…",
+  "New Project...": "新建项目…",
   "Run / Debug Configurations": "运行 / 调试配置",
   "Sakura Atelier · one configuration for running, debugging and testing":
     "Sakura Atelier · 统一运行、调试与测试配置",

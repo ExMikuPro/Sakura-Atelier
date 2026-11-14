@@ -2,12 +2,19 @@
 
 版本 **0.1.0**，扩展 ID **ExMikuPro.sakura-atelier**，最低 API 保持 VS Code **1.85.0**（实际最低版本测试 1.85.2）。本次在 macOS ARM64 验证，不能代表 Linux / Windows 已通过。
 
+当前全量集成结果见 [macOS 集成验收报告](docs/MACOS_INTEGRATION_2026-11-14.md)。
+
 ## 命令
 
 ```sh
 npm ci
 npm test
 npm run test:ui
+node scripts/integration-p1.cjs p1-a
+node scripts/integration-p1.cjs p1-b
+node scripts/integration-p1.cjs p1-c
+npm run test:wizard
+SAKURA_TEST_JAVA_BIN=/opt/homebrew/opt/openjdk@17/bin npm run test:projects
 SAKURA_TEST_JAVA_BIN=/opt/homebrew/opt/openjdk@17/bin npm run test:integration
 SAKURA_TEST_SUITE=advanced SAKURA_TEST_ADAPTERS=1 \
 SAKURA_VSCODE_EXECUTABLE='/Applications/Visual Studio Code.app/Contents/MacOS/Code' \
@@ -22,16 +29,18 @@ Java 路径只是本机测试时显式提供的 SDK，不是扩展的默认目�
 | 检查 | 结果 | 范围 |
 | --- | --- | --- |
 | TypeScript 编译 + ESLint | 通过 | 包括新 Registry、双存储、主机消息协议 |
-| 单元测试 | 71 项通过 | 原 44 项 + 27 项新覆盖 |
-| Firefox Webview 界面脚本测试 | 10 项通过 | 真实 HTML/CSS/JS；主机桥接采用测试适配器，存储使用实际 ConfigurationStore |
-| 基础 Extension Host | 16 项通过 | VS Code 1.85.2，原 Run 回归完整保留 |
-| 高级 Extension Host | 21 项通过，4 项未验证 | VS Code 1.146.0，多语言运行 / 调试 / 多工作区 |
-| 原生 Webview 手动交互 | 已验证 | 隔离的 1.85.2 Host，中文菜单 / 设置树 / 模板 / 个人自动保存 / Go 发现 / 重载恢复 |
+| 单元测试 | 266 项通过，3 项可选 CLI 未执行 | 保留所有测试；本机无 PlatformIO Core |
+| Firefox Webview 界面脚本测试 | 15 项通过 | 真实 HTML/CSS/JS；主机桥接采用测试适配器，存储使用实际 ConfigurationStore |
+| 基础 Extension Host | 18 项通过 | VS Code 1.85.2，原 Run 回归完整保留 |
+| 高级 Extension Host | 19 项通过，5 项未验证 | VS Code 1.146.0，多语言运行 / 调试 / 多工作区 |
+| 配置页原生手动交互（#1 既有记录） | 保留原分支记录 | 新增功能以本次自动化结果和集成报告为准 |
+| 语言项目创建 | 9 类创建通过，8 类实际执行 | C# 无 .NET SDK，仅文件和配置验证；TypeScript 使用仓库现有 tsx |
+| 真实 Webview 自动化 | 通过 | 1.146.0：总览主区域、文件新建选择器、向导搜索/收藏/创建/恢复、深浅主题、窄窗口 |
 | SDK 真实安装与管理员流程 | 未执行 | 确认 / 取消 / 失败 / 刷新契约用模拟测试；只读 Homebrew 查询实际通过 |
 
 Browser 插件未提供，界面自动化按 frontend-testing-debugging 工作流使用现有 Firefox Playwright。浅色樱花、深色、高对比度使用 VS Code 主题变量的测试夹具；这些截图证明变量适配和布局，不等同于分别加载三个真实主题。小窗口 540 × 560 与桌面 1240 × 860 已检查，无相关页面脚本异常。
 
-截图位于 `docs/images/`，为隔离、无用户源码的界面夹具。真实 Extension Host 使用同一批资源，通过原生辅助功能树检查。
+截图位于 `docs/images/`。`settings-*.png` 是原有界面夹具；`integration-*.png` 来自隔离的真实 Extension Host，不包含用户源码。新建项目入口是“文件 → 新建文件…”选择器或命令面板，不是原生文件菜单的一级项。
 
 ## 新增自动化覆盖
 
