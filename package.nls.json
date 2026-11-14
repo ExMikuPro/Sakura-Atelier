@@ -70,5 +70,6 @@
   "command.sakuraAtelier.embedded.reloadDevices": "Sakura Atelier：重新加载器件",
   "command.sakuraAtelier.newProject": "Sakura Atelier：新建嵌入式项目…",
   "command.openToolchainRegistry": "打开当前环境的全局工具链注册表",
-  "command.rescanToolchains": "重新扫描当前环境的工具链"
+  "command.rescanToolchains": "重新扫描当前环境的工具链",
+  "command.checkProjectDependencies": "Sakura Atelier：项目依赖检查与修复…"
 }

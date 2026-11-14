@@ -681,3 +681,9 @@ test('existing configuration navigation opens the unified embedded project wizar
   await page.getByRole('treeitem', { name: '新建嵌入式项目…', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__uiMessages.some(message => message.type === 'newProject'))).toBe(true);
 });
+
+test('existing configuration navigation requests dependency inspection without executing a repair', async ({ page }) => {
+  await page.getByRole('treeitem', { name: '项目依赖检查与修复…', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.__uiMessages.some(message => message.type === 'checkDependencies'))).toBe(true);
+  expect(await page.evaluate(() => window.__uiMessages.some(message => /repair|install/i.test(message.type)))).toBe(false);
+});

@@ -70,5 +70,6 @@
   "command.sakuraAtelier.embedded.reloadDevices": "Sakura Atelier: Reload PlatformIO Boards",
   "command.sakuraAtelier.newProject": "Sakura Atelier: New Embedded Project...",
   "command.openToolchainRegistry": "Open Current Host Toolchain Registry",
-  "command.rescanToolchains": "Rescan Current Host Toolchains"
+  "command.rescanToolchains": "Rescan Current Host Toolchains",
+  "command.checkProjectDependencies": "Sakura Atelier: Check Project Dependencies..."
 }

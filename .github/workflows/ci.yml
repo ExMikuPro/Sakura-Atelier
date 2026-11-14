@@ -55,6 +55,8 @@ jobs:
         run: node scripts/integration-p1.cjs p1-a
       - name: Verify Python environment creation and rediscovery
         run: node scripts/integration-p1.cjs p1-b
+      - name: Verify read-only project dependency diagnosis
+        run: node scripts/integration-p1.cjs p1-c
       - name: Run actual new-project wizard UI in stable VS Code
         run: npm run test:wizard
 

@@ -6,6 +6,7 @@ import { hostToolchains } from "../../src/environment/registryAccess";
 import { createProjectDependencyServices } from "../../src/environment/dependencyServiceHost";
 export async function run(): Promise<void> {
   await vscode.extensions.getExtension("ExMikuPro.sakura-atelier")!.activate();
+  assert.ok((await vscode.commands.getCommands()).includes('sakuraAtelier.checkProjectDependencies'));
   const registry = hostToolchains()!;
   await registry.settled();
   const node = registry

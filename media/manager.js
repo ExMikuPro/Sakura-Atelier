@@ -788,6 +788,7 @@
       "add",
     );
     nav(configs, "New Embedded Project...", () => send("newProject"), "new-folder");
+    nav(configs, "Project Dependencies...", () => send("checkDependencies", { id: selected }), "package");
     add.id = "add-configuration";
     add.setAttribute("aria-haspopup", "dialog");
     add.setAttribute("aria-expanded", "false");

@@ -282,6 +282,11 @@
         "title": "%command.rescanToolchains%",
         "category": "Sakura Atelier",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "sakuraAtelier.checkProjectDependencies",
+        "title": "%command.checkProjectDependencies%",
+        "icon": "$(package)"
       }
     ],
     "menus": {
