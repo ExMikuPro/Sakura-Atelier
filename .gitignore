@@ -3,3 +3,5 @@ out/
 .vscode-test/
 *.vsix
 .test-output/
+
+/media/localization.js
