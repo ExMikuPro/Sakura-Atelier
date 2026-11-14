@@ -63,5 +63,8 @@
   "command.sakuraAtelier.embedded.platformio.debug": "Sakura Atelier：PlatformIO：调试",
   "command.sakuraAtelier.embedded.platformio.monitor": "Sakura Atelier：PlatformIO：串口监视器",
   "command.sakuraAtelier.embedded.platformio.test": "Sakura Atelier：PlatformIO：测试（仅构建）",
-  "command.sakuraAtelier.embedded.platformio.testOnDevice": "Sakura Atelier：PlatformIO：在设备上测试"
+  "command.sakuraAtelier.embedded.platformio.testOnDevice": "Sakura Atelier：PlatformIO：在设备上测试",
+  "command.sakuraAtelier.embedded.stm32.build": "Sakura Atelier：STM32：构建",
+  "command.sakuraAtelier.embedded.stm32.flash": "Sakura Atelier：STM32：烧录",
+  "command.sakuraAtelier.embedded.stm32.debug": "Sakura Atelier：STM32：调试"
 }

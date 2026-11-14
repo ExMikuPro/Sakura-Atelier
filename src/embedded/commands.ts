@@ -9,6 +9,9 @@ import type { DebugService } from '../debugService';
 import { createToolRegistry, manageEmbeddedTools } from './toolsCommand';
 import { nodeRunner } from './process';
 import type { EmbeddedPlan } from './plan';
+import { stm32Backend, readStm32Project } from './stm32/project';
+import { buildStm32Plan, expectedElf, FlashTarget, Stm32Operation, ToolPaths } from './stm32/plans';
+import { embeddedToolIds } from './toolchainDiscovery';
 import { describeEnvironments, platformioBackend, readPlatformioProject, PlatformioProject } from './platformio/project';
 import { buildPlatformioPlan, chooseEnvironment, platformioIdeExtension, PlatformioOperation } from './platformio/plans';
 import { listPorts, readConfig, readMetadata, EnvironmentMetadata } from './platformio/cli';
@@ -16,7 +19,8 @@ import { defaultEnvironments } from './platformio/ini';
 
 export const embeddedCommandNames = [
   'manageTools', 'platformio.selectEnvironment', 'platformio.build', 'platformio.clean', 'platformio.upload',
-  'platformio.debug', 'platformio.monitor', 'platformio.test', 'platformio.testOnDevice'
+  'platformio.debug', 'platformio.monitor', 'platformio.test', 'platformio.testOnDevice',
+  'stm32.build', 'stm32.flash', 'stm32.debug'
 ] as const;
 export type EmbeddedCommandName = typeof embeddedCommandNames[number];
 
@@ -25,7 +29,7 @@ const host: BackendHost = {
   async readText(file) { try { return await fs.readFile(file, 'utf8'); } catch { return undefined; } }
 };
 
-function ensureBackends(): void { if (!adapterRegistry.backends.has(platformioBackend.id)) { adapterRegistry.backends.register(platformioBackend.id, platformioBackend); } }
+function ensureBackends(): void { for (const backend of [platformioBackend, stm32Backend]) { if (!adapterRegistry.backends.has(backend.id)) { adapterRegistry.backends.register(backend.id, backend); } } }
 
 /** Project roots worth checking: the active file's ancestors inside the workspace, each workspace folder, and its direct children. */
 async function candidateRoots(): Promise<{ folder: vscode.WorkspaceFolder; root: string }[]> {
@@ -44,13 +48,13 @@ async function candidateRoots(): Promise<{ folder: vscode.WorkspaceFolder; root:
   return result;
 }
 
-async function pickProject(): Promise<{ folder: vscode.WorkspaceFolder; project: BackendProject }> {
+async function pickProject(backend: 'platformio' | 'stm32'): Promise<{ folder: vscode.WorkspaceFolder; project: BackendProject }> {
   ensureBackends();
   const found: { folder: vscode.WorkspaceFolder; project: BackendProject }[] = [];
   for (const { folder, root } of await candidateRoots()) {
-    for (const project of await adapterRegistry.detectBackendProjects(root, host)) { if (project.backend === 'platformio') { found.push({ folder, project }); } }
+    for (const project of await adapterRegistry.detectBackendProjects(root, host)) { if (project.backend === backend) { found.push({ folder, project }); } }
   }
-  if (!found.length) { throw new RunnerError('No platformio.ini found in this workspace.'); }
+  if (!found.length) { throw new RunnerError(backend === 'platformio' ? 'No platformio.ini found in this workspace.' : 'No STM32 CMake or STM32CubeMX (.ioc) project found in this workspace.'); }
   if (found.length === 1) { return found[0]; }
   const picked = await vscode.window.showQuickPick(found.map(f => ({ label: path.basename(f.project.root), description: f.project.root, f })), { title: 'Select PlatformIO project' });
   if (!picked) { throw new RunnerError('Run stopped.'); }
@@ -89,20 +93,19 @@ async function pickPort(pio: string | undefined, root: string): Promise<string |
   return picked.port;
 }
 
-async function execute(plan: EmbeddedPlan, folder: vscode.WorkspaceFolder, executor: TaskExecutor, debug: DebugService): Promise<void> {
+export async function executeEmbeddedPlan(plan: EmbeddedPlan, folder: vscode.WorkspaceFolder, executor: TaskExecutor, debug: DebugService): Promise<void> {
   if (plan.blockers.length) { throw new RunnerError(plan.blockers.join(' '), true); }
   if (plan.risk === 'writes-device' && await vscode.window.showWarningMessage(plan.confirm ?? 'This writes to a device. Continue?', { modal: true }, 'Continue') !== 'Continue') { return; }
-  if (plan.debug) {
-    if (!vscode.extensions.getExtension(plan.debug.extension)) { throw new RunnerError(`Install ${plan.debug.extension} to debug.`); }
-    await debug.start(folder, plan.debug.configuration as vscode.DebugConfiguration);
-    return;
+  if (plan.debug && !vscode.extensions.getExtension(plan.debug.extension)) { throw new RunnerError(`Install ${plan.debug.extension} to debug.`); }
+  if (plan.steps.length) {
+    const ran = await executor.exclusive(() => executor.run({ name: plan.label, steps: plan.steps }, folder));
+    if (!ran) { throw new RunnerError('Another Sakura Atelier run is in progress.'); }
   }
-  const ran = await executor.exclusive(() => executor.run({ name: plan.label, steps: plan.steps }, folder));
-  if (!ran) { throw new RunnerError('Another Sakura Atelier run is in progress.'); }
+  if (plan.debug) { await debug.start(folder, plan.debug.configuration as vscode.DebugConfiguration); }
 }
 
 async function platformio(name: string, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
-  const { folder, project: backendProject } = await pickProject();
+  const { folder, project: backendProject } = await pickProject('platformio');
   const tools = createToolRegistry(context);
   const pio = await tools.resolve('platformio');
   const project = await loadProject(backendProject.root, pio);
@@ -117,11 +120,46 @@ async function platformio(name: string, context: vscode.ExtensionContext, execut
   }
   const port = operation === 'monitor' || operation === 'upload' || operation === 'testOnDevice' ? await pickPort(pio, project.root) : undefined;
   const plan = buildPlatformioPlan({ operation, pio, project, env, port, metadata, ideExtensionInstalled: !!vscode.extensions.getExtension(platformioIdeExtension), remote: !!vscode.env.remoteName });
-  await execute(plan, folder, executor, debug);
+  await executeEmbeddedPlan(plan, folder, executor, debug);
+}
+
+async function toolPaths(context: vscode.ExtensionContext): Promise<ToolPaths> {
+  const statuses = await createToolRegistry(context).discover();
+  return Object.fromEntries(embeddedToolIds.map(id => [id, statuses[id].selected?.path]).filter(e => e[1])) as ToolPaths;
+}
+
+async function pickFlashTarget(project: NonNullable<Awaited<ReturnType<typeof readStm32Project>>>): Promise<FlashTarget | undefined> {
+  const picked = await vscode.window.showOpenDialog({ canSelectMany: false, defaultUri: vscode.Uri.file(path.dirname(expectedElf(project))), filters: { Firmware: ['elf', 'hex', 'bin', 'srec'] }, title: 'Select the firmware to flash', openLabel: 'Select firmware' });
+  if (!picked?.[0]) { return undefined; }
+  const firmware = picked[0].fsPath;
+  let address: string | undefined;
+  if (/\.bin$/i.test(firmware)) { address = await vscode.window.showInputBox({ title: 'Load address of the .bin image', prompt: 'A .bin file has no address. Enter it explicitly, for example 0x08000000.', validateInput: v => /^0x[0-9a-fA-F]+$/.test(v) ? undefined : 'Use a hexadecimal address such as 0x08000000.' }); if (!address) { return undefined; } }
+  const probe = await vscode.window.showQuickPick([{ label: 'ST-LINK over SWD (first probe found)', serial: undefined as string | undefined, ask: false }, { label: 'ST-LINK over SWD (choose by serial number)', serial: undefined as string | undefined, ask: true }], { title: 'Select the debug probe' });
+  if (!probe) { return undefined; }
+  let serial = probe.serial;
+  if (probe.ask) { serial = await vscode.window.showInputBox({ title: 'ST-LINK serial number', prompt: 'Printed by STM32CubeProgrammer or shown in the ST-LINK firmware tool.' }); if (!serial) { return undefined; } }
+  const device = await vscode.window.showInputBox({ title: 'Target MCU', prompt: 'Confirm the MCU on the board you are flashing.', value: project.ioc?.info.mcu ?? '', ignoreFocusOut: true });
+  if (!device) { return undefined; }
+  return { firmware, address, probe: { interface: 'SWD', ...(serial ? { serial } : {}) }, device };
+}
+
+async function stm32(name: string, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
+  const { folder, project: found } = await pickProject('stm32');
+  const project = await readStm32Project(found.root, host);
+  if (!project) { throw new RunnerError('The STM32 project could not be read.'); }
+  const operation = name.slice('stm32.'.length) as Stm32Operation;
+  const tools = await toolPaths(context);
+  let preset: string | undefined; let flash: FlashTarget | undefined; let device: string | undefined;
+  if (operation !== 'flash' && project.presets.length) { preset = (await vscode.window.showQuickPick(project.presets, { title: 'CMake preset' })); if (!preset) { return; } }
+  if (operation === 'flash') { flash = await pickFlashTarget(project); if (!flash) { return; } }
+  if (operation === 'debug' && !project.ioc?.info.mcu) { device = await vscode.window.showInputBox({ title: 'Target MCU', prompt: 'The MCU is not stated in a .ioc file. Enter it explicitly.' }); if (!device) { return; } }
+  const plan = buildStm32Plan({ operation, project, tools, preset, flash, device, cortexDebugInstalled: !!vscode.extensions.getExtension('marus25.cortex-debug'), remote: !!vscode.env.remoteName });
+  await executeEmbeddedPlan(plan, folder, executor, debug);
 }
 
 export async function runEmbeddedCommand(name: EmbeddedCommandName, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
   if (!vscode.workspace.isTrusted) { await vscode.window.showWarningMessage('Sakura Atelier: Trust this workspace before using embedded tools; they run local programs.'); return; }
   if (name === 'manageTools') { await manageEmbeddedTools(createToolRegistry(context)); return; }
+  if (name.startsWith('stm32.')) { await stm32(name, context, executor, debug); return; }
   await platformio(name, context, executor, debug);
 }

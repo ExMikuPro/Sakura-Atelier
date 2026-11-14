@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand(`${namespace}.selectConfiguration`,(id?:string)=>safe(()=>controller!.selectConfiguration(id))()));
   }
   // Embedded support is loaded on first use so activation stays unchanged.
-  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice'] as const){
+  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug'] as const){
     context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
   }
   const updateLanguage=()=>{void vscode.commands.executeCommand('setContext','sakuraAtelier.uiEnglish',language()==='en');controller?.updateStatus();};

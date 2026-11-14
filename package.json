@@ -81,6 +81,18 @@
         "title": "%command.sakuraAtelier.embedded.platformio.testOnDevice%"
       },
       {
+        "command": "sakuraAtelier.embedded.stm32.build",
+        "title": "%command.sakuraAtelier.embedded.stm32.build%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.stm32.flash",
+        "title": "%command.sakuraAtelier.embedded.stm32.flash%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.stm32.debug",
+        "title": "%command.sakuraAtelier.embedded.stm32.debug%"
+      },
+      {
         "command": "sakuraAtelier.selectConfiguration",
         "title": "%command.sakuraAtelier.selectConfiguration%",
         "icon": "$(chevron-down)"

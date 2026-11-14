@@ -63,5 +63,8 @@
   "command.sakuraAtelier.embedded.platformio.debug": "Sakura Atelier: PlatformIO: Debug",
   "command.sakuraAtelier.embedded.platformio.monitor": "Sakura Atelier: PlatformIO: Serial Monitor",
   "command.sakuraAtelier.embedded.platformio.test": "Sakura Atelier: PlatformIO: Test (build only on boards)",
-  "command.sakuraAtelier.embedded.platformio.testOnDevice": "Sakura Atelier: PlatformIO: Test on Device (writes firmware to the board)"
+  "command.sakuraAtelier.embedded.platformio.testOnDevice": "Sakura Atelier: PlatformIO: Test on Device (writes firmware to the board)",
+  "command.sakuraAtelier.embedded.stm32.build": "Sakura Atelier: STM32: Build",
+  "command.sakuraAtelier.embedded.stm32.flash": "Sakura Atelier: STM32: Flash (writes firmware to the board)",
+  "command.sakuraAtelier.embedded.stm32.debug": "Sakura Atelier: STM32: Debug"
 }
