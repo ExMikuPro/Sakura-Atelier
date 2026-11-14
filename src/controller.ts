@@ -1,3 +1,5 @@
+import { t } from './i18n';
+import { ui } from './ui';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
@@ -42,16 +44,16 @@ export class AtelierController implements vscode.Disposable {
   }
   updateStatus():void{void vscode.commands.executeCommand('setContext','sakuraAtelier.debugRunning',this.debug?.running??false);void this.statusText();}
   private async statusText():Promise<void>{
-    try{if(!this.last||!supports(this.last.languageId)||!vscode.workspace.getWorkspaceFolder(this.last.uri)){this.status.hide();return;}const ctx=await this.editorContext();const {document}=await this.store.read(ctx.folder);const selection=this.store.selection(ctx.folder,ctx.root,document);const name=selection.kind==='managed'?document.configurations.find(c=>c.id===selection.id)?.name??'Missing configuration':selection.kind==='launch'||selection.kind==='task'?selection.id:selection.kind;
-      this.status.text=`${this.debug.running?'$(debug-alt)':'$(chevron-down)'} ${name}`;this.status.tooltip=`Sakura Atelier · ${ctx.folder.name}\n${this.python.mismatch||'Select Run / Debug Configuration'}`;this.status.show();
-    }catch{this.status.text='$(warning) Sakura Atelier';this.status.tooltip='Configuration needs attention';this.status.show();}
+    try{if(!this.last||!supports(this.last.languageId)||!vscode.workspace.getWorkspaceFolder(this.last.uri)){this.status.hide();return;}const ctx=await this.editorContext();const {document}=await this.store.read(ctx.folder);const selection=this.store.selection(ctx.folder,ctx.root,document);const name=selection.kind==='managed'?document.configurations.find(c=>c.id===selection.id)?.name??t('Missing configuration'):selection.kind==='launch'||selection.kind==='task'?selection.id:t(selection.kind);
+      this.status.text=`${this.debug.running?'$(debug-alt)':'$(chevron-down)'} ${name}`;this.status.tooltip=`Sakura Atelier · ${ctx.folder.name}\n${t(this.python.mismatch||'Select Run / Debug Configuration')}`;this.status.show();
+    }catch{this.status.text='$(warning) Sakura Atelier';this.status.tooltip=t('Configuration needs attention');this.status.show();}
   }
   async openManager(mode:'configurations'|'toolchains'|'sdk'='configurations',add=false):Promise<void>{const ctx=await this.editorContext();if(!this.panel){this.panel=new ManagerPanel(this,()=>{this.panel=undefined;});}await this.panel.show(ctx,mode,add);}
   async selectConfiguration(id?:string):Promise<void>{
     const ctx=await this.editorContext();const {document}=await this.store.read(ctx.folder);const current=this.store.selection(ctx.folder,ctx.root,document);
     if(typeof id==='string'&&id){if(id==='auto'){await this.store.select(ctx.folder,ctx.root,{kind:'auto'});}else if(document.configurations.some(c=>c.id===id)){await this.selectManaged(ctx.folder,ctx.root,id);}else{throw new RunnerError('Configuration id was not found in this project.',true);}this.updateStatus();return;}
     const items:(vscode.QuickPickItem&{selection?:Selection;action?:string})[]=[];
-    const add=(label:string,selection:Selection,description:string,detail:string)=>items.push({label:`${current.kind===selection.kind&&current.id===selection.id?'$(check) ':'  '}${label}`,description:`${ctx.folder.name} · ${description}`,detail,selection});
+    const add=(label:string,selection:Selection,description:string,detail:string)=>items.push({label:`${current.kind===selection.kind&&current.id===selection.id?'$(check) ':'  '}${['managed','launch','task'].includes(selection.kind)?label:t(label)}`,description:`${ctx.folder.name} · ${description.split(' · ').map(part=>t(part)).join(' · ')}`,detail:t(detail),selection});
     add('Auto Detect',{kind:'auto'},'Run','Use the original project-first runner');add('Run Current File',{kind:'file'},`${ctx.language} · Run`,'Original single-file runner');
     if(ctx.project){add('Run Project',{kind:'project'},`${ctx.language} · Run`,'Original project runner');if(['go','rust','python','csharp'].includes(ctx.language)){add('Test Project',{kind:'test'},`${ctx.language} · Test`,'Native language test command');}}
     for(const c of document.configurations){add(c.name,{kind:'managed',id:c.id},`${c.language} · ${c.operation==='test'?'Test':'Run / Debug'}`,`${c.kind}: ${c.target}`);}
@@ -59,11 +61,11 @@ export class AtelierController implements vscode.Disposable {
     for(const c of launch){if(c.name&&c.type){add(c.name,{kind:'launch',id:c.name},`${c.type} · Run / Debug`,'Existing launch.json configuration');}}
     if(vscode.workspace.isTrusted){for(const task of await vscode.tasks.fetchTasks()){if(task.definition.type!=='sakuraRunner'&&!task.isBackground&&typeof task.scope==='object'&&task.scope.uri.toString()===ctx.folder.uri.toString()){add(task.name,{kind:'task',id:task.name},'Task · Run',task.source);}}}
     items.push({label:'Edit Configurations...',action:'edit'},{label:'Add Configuration...',action:'add'},{label:'Manage Toolchains...',action:'toolchains'},{label:'SDK Manager...',action:'sdk'},{label:'Configure Run/Debug...',action:'configure'});
-    const picked=await vscode.window.showQuickPick(items,{title:'Sakura Atelier — Run / Debug Configurations',matchOnDescription:true,matchOnDetail:true});if(!picked){return;}
+    const picked=await ui.showQuickPick(items,{title:'Sakura Atelier — Run / Debug Configurations',matchOnDescription:true,matchOnDetail:true});if(!picked){return;}
     if(picked.selection){if(picked.selection.kind==='managed'){await this.selectManaged(ctx.folder,ctx.root,picked.selection.id!);}else{await this.store.select(ctx.folder,ctx.root,picked.selection);}this.updateStatus();return;}
     if(picked.action==='configure'){await this.configureNative();}else{await this.openManager(picked.action==='toolchains'?'toolchains':picked.action==='sdk'?'sdk':'configurations',picked.action==='add');}
   }
-  private async configureNative():Promise<void>{const choice=await vscode.window.showQuickPick(['Edit Configurations...','Open launch.json / Add Debug Configuration','Open Tasks Configuration'],{title:'Configure Run/Debug'});if(choice?.startsWith('Edit')){await this.openManager();}else if(choice?.startsWith('Open launch')){await vscode.commands.executeCommand('workbench.action.debug.configure');}else if(choice){await vscode.commands.executeCommand('workbench.action.tasks.configureTaskRunner');}}
+  private async configureNative():Promise<void>{const choice=await ui.showQuickPick(['Edit Configurations...','Open launch.json / Add Debug Configuration','Open Tasks Configuration'],{title:'Configure Run/Debug'});if(choice?.startsWith('Edit')){await this.openManager();}else if(choice?.startsWith('Open launch')){await vscode.commands.executeCommand('workbench.action.debug.configure');}else if(choice){await vscode.commands.executeCommand('workbench.action.tasks.configureTaskRunner');}}
   async run(action:'run'|'debug'):Promise<void>{
     if(!vscode.workspace.isTrusted){throw new RunnerError('Code execution is disabled in an untrusted workspace. Trust it before running or debugging.');}
     // Preserve standalone Run and every original auto-detection behavior.
@@ -78,10 +80,10 @@ export class AtelierController implements vscode.Disposable {
       if(selection.kind==='managed'&&!managed){throw new RunnerError('Selected configuration no longer exists. Select another configuration.',true);}
       if(!managed&&action==='debug'){
         const launch=await launchConfigurations(ctx.folder);
-        if(launch.length){const picked=launch.length===1?launch[0]:await vscode.window.showQuickPick(launch.map(c=>({label:c.name,c})),{title:'Select compatible Debug configuration'});if(picked){await this.launchNamed(ctx,'c' in picked?picked.c.name:picked.name,false);}return;}
+        if(launch.length){const picked=launch.length===1?launch[0]:await ui.showQuickPick(launch.map(c=>({label:c.name,c})),{title:'Select compatible Debug configuration'});if(picked){await this.launchNamed(ctx,'c' in picked?picked.c.name:picked.name,false);}return;}
         if(!['go','python','javascript','typescript','javascriptreact','typescriptreact'].includes(ctx.language)){throw new RunnerError('Create or choose a launch.json configuration for this language, or add an executable run configuration.',true);}
       }
-      if(!managed){managed=newConfiguration(ctx.language,selection.kind==='test'?`${ctx.language}: Test project`:`${ctx.language}: ${action}`);managed.id='automatic';managed.cwd=ctx.root;managed.target=selection.kind==='test'?(ctx.language==='go'?'./...':'.'):ctx.file;managed.kind=selection.kind==='test'?'project':'file';if(selection.kind==='test'){managed.operation='test';}}
+      if(!managed){managed=newConfiguration(ctx.language,selection.kind==='test'?`${ctx.language}: ${t('Test Project')}`:`${ctx.language}: ${t(action)}`);managed.id='automatic';managed.cwd=ctx.root;managed.target=selection.kind==='test'?(ctx.language==='go'?'./...':'.'):ctx.file;managed.kind=selection.kind==='test'?'project':'file';if(selection.kind==='test'){managed.operation='test';}}
       await this.executeManaged(managed,ctx,action);
     });
   }
@@ -125,7 +127,7 @@ export class AtelierController implements vscode.Disposable {
       const type=c.debugName?(await this.named(ctx.folder,c.debugName)).type:debuggerType(c.language,c.debugType);
       const prepared=await adapter.buildDebugPlan(c,context,type);
       if(prepared.build.length){await this.executor.run({name:`Build ${c.name}`,steps:prepared.build},ctx.folder);}
-      if(prepared.artifactFile){const artifacts=JSON.parse(await fs.readFile(prepared.artifactFile,'utf8')) as {executable:string;name:string}[];if(!artifacts.length){throw new RunnerError('Cargo did not produce a runnable executable.',true);}const picked=artifacts.length===1?artifacts[0]:await vscode.window.showQuickPick(artifacts.map(a=>({label:a.name,artifact:a})),{title:'Select Cargo executable'});if(!picked){return;}prepared.configuration.program='artifact' in picked?picked.artifact.executable:picked.executable;}
+      if(prepared.artifactFile){const artifacts=JSON.parse(await fs.readFile(prepared.artifactFile,'utf8')) as {executable:string;name:string}[];if(!artifacts.length){throw new RunnerError('Cargo did not produce a runnable executable.',true);}const picked=artifacts.length===1?artifacts[0]:await ui.showQuickPick(artifacts.map(a=>({label:a.name,artifact:a})),{title:'Select Cargo executable'});if(!picked){return;}prepared.configuration.program='artifact' in picked?picked.artifact.executable:picked.executable;}
       let launch=prepared.configuration;
       if(c.debugName){const existing=await this.named(ctx.folder,c.debugName);if(existing.preLaunchTask!==undefined&&existing.preLaunchTask!==c.preLaunchTask){await this.runTask(ctx.folder,existing.preLaunchTask);}delete existing.preLaunchTask;launch={...existing,...launch,name:existing.name};}
       await this.debug.start(ctx.folder,launch,false,cleanup);keep=true;
