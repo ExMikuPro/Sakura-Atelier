@@ -39,7 +39,9 @@ export class SdkManager implements vscode.Disposable{
     const command=[step.command,...step.args].map(arg=>JSON.stringify(arg)).join(' ');
     const message=[t('Install {0} {1}',current.name,version),t('Source: {0}',current.source),command,admin?t('Administrator permission will be requested by sudo in the terminal.'):'',adapter.kind==='brew'?t('Homebrew formulae use --skip-link; automatic cleanup and dependent upgrades are disabled.'):'',t('Package-manager permission and license prompts remain interactive.')].filter(Boolean).join('\n');
     const target=t('Target host: {0} · {1}/{2}',this.host?.environment.label??'Extension Host',process.platform,process.arch);
-    const accepted=await ui.showWarningMessage(target+'\n'+message,{modal:true},'Install');
+    const scope=t('Installation scope: {0}',this.host?.environment.kind==='container'?t('Current container only'):t('Current target host'));
+    const permission=t('Privileges: {0}',typeof process.getuid==='function'&&process.getuid()===0?'root':t('Confirmed by the system in the terminal'));
+    const accepted=await ui.showWarningMessage([target,scope,permission,message].join('\n'),{modal:true},'Install');
     if(accepted!=='Install'){return {cancelled:true};}this.host?.assert();
     const started=await this.installer.exclusive(()=>this.installer.run({name:`Install ${current.name}`,steps:[step]}));
     if(!started){throw new RunnerError('Another SDK installation is already running.');}

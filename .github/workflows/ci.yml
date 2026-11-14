@@ -51,6 +51,8 @@ jobs:
       - run: npm ci
       - name: Run Extension Host integration tests
         run: npm run test:integration
+      - name: Verify host-isolated SDK discovery
+        run: node scripts/integration-p1.cjs p1-a
       - name: Run actual new-project wizard UI in stable VS Code
         run: npm run test:wizard
 
