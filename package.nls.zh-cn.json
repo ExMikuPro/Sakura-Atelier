@@ -66,5 +66,6 @@
   "command.sakuraAtelier.embedded.platformio.testOnDevice": "Sakura Atelier：PlatformIO：在设备上测试",
   "command.sakuraAtelier.embedded.stm32.build": "Sakura Atelier：STM32：构建",
   "command.sakuraAtelier.embedded.stm32.flash": "Sakura Atelier：STM32：烧录",
-  "command.sakuraAtelier.embedded.stm32.debug": "Sakura Atelier：STM32：调试"
+  "command.sakuraAtelier.embedded.stm32.debug": "Sakura Atelier：STM32：调试",
+  "command.sakuraAtelier.embedded.reloadDevices": "Sakura Atelier：重新加载器件"
 }
