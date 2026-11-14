@@ -64,6 +64,7 @@ export async function run(): Promise<void> {
   await fs.mkdir(path.join(root, 'HostCreatedProject'));
   await frame.locator('#name').fill('HostCreatedProject2'); await frame.locator('#name').press('Tab');
   await frame.locator('#name').fill('HostCreatedProject'); await frame.locator('#name').press('Tab');
+  await expect(frame.locator('#name')).toHaveValue('HostCreatedProject');
   await expect(frame.locator('#create')).toBeDisabled();
   await expect(frame.locator('#detail')).toContainText('已存在同名文件夹');
   await frame.locator('#name').fill('HostCreatedProject2'); await frame.locator('#name').press('Tab');
