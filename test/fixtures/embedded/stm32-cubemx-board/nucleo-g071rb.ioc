@@ -1,0 +1,11 @@
+#MicroXplorer Configuration settings - do not modify
+File.Version=6
+Mcu.Family=STM32G0
+Mcu.Name=STM32G071R(6-8-B)Tx
+Mcu.Package=LQFP64
+Mcu.UserName=STM32G071RBTx
+Mcu.CPN=STM32G071RBT6
+ProjectManager.ProjectName=nucleo-g071rb
+ProjectManager.TargetToolchain=CMake
+board=NUCLEO-G071RB
+boardIOC=true

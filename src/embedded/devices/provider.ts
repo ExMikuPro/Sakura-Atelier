@@ -31,7 +31,14 @@ export function searchDevices<T extends DeviceInfo>(devices: readonly T[], query
 /** Merges providers. Loading is cached per provider, so typing in a search box never reaches an external tool. */
 export class DeviceCatalog {
   private results = new Map<string, ProviderResult>();
-  constructor(private readonly providers: readonly DeviceProvider[]) {}
+  private readonly providers: DeviceProvider[];
+  constructor(providers: readonly DeviceProvider[]) { this.providers = [...providers]; }
+
+  /** Adds another source (another vendor, another tool). Later loads include it. */
+  add(provider: DeviceProvider): void {
+    if (this.providers.some(p => p.id === provider.id)) { throw new Error(`Device provider "${provider.id}" is already registered.`); }
+    this.providers.push(provider); this.results.clear();
+  }
 
   async load(refresh = false): Promise<Map<string, ProviderResult>> {
     if (refresh || !this.results.size) {
