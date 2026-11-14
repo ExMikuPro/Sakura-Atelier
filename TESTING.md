@@ -1,13 +1,13 @@
-# Sakura Atelier 验证记录
+# Sakura Atelier 测试与验收
 
-验证环境：macOS ARM64；扩展版本 0.1.0；ID ExMikuPro.sakura-atelier。当前机器验证结果不能代表 Linux x86_64 或 Windows x64 通过。
+版本 **0.1.0**，扩展 ID **ExMikuPro.sakura-atelier**，最低 API 保持 VS Code **1.85.0**（实际最低版本测试 1.85.2）。本次在 macOS ARM64 验证，不能代表 Linux / Windows 已通过。
 
-## 可复现命令
-
-开发 Node.js 22+，先执行 `npm ci`。
+## 命令
 
 ```sh
+npm ci
 npm test
+npm run test:ui
 SAKURA_TEST_JAVA_BIN=/opt/homebrew/opt/openjdk@17/bin npm run test:integration
 SAKURA_TEST_SUITE=advanced SAKURA_TEST_ADAPTERS=1 \
 SAKURA_VSCODE_EXECUTABLE='/Applications/Visual Studio Code.app/Contents/MacOS/Code' \
@@ -15,66 +15,79 @@ npm run test:integration
 npm run package
 ```
 
-Java 路径只是本机测试时显式提供的 SDK，不是扩展的默认路径或安装假设。集成脚本支持 SAKURA_VSCODE_EXECUTABLE / SAKURA_VSCODE_VERSION 与 SAKURA_TEST_EXTENSION_PATH；默认测试最低支持的 VS Code 1.85.2。所有集成工作区、用户配置与调试扩展目录均隔离。
+Java 路径只是本机测试时显式提供的 SDK，不是扩展的默认目录。集成脚本使用隔离的多根工作区、用户与扩展目录。高级测试只复制本机已有的微软 Python / Debugger / Environments 与 CodeLLDB，不自动安装 SDK。新 Python 环境 API 的实际验证使用 VS Code 1.146.0；最低版本保留兼容回退。
 
-高级实际调试测试需要预先安装官方 Python、Python Debugger、Python Environments 与 CodeLLDB。SAKURA_TEST_ADAPTERS=1 仅把已存在的本机扩展复制到测试目录；不会为用户自动安装 SDK。新 Python Environments API 依赖较新版本 VS Code，因此官方环境激活端到端验证使用 VS Code 1.146.0；最低版本使用兼容回退。
+## 本次结果
 
-## 自动化范围
-
-- 单元测试：44 项，包含原有运行计划、支持语言、工具链缺失、路径/参数边界、工作区信任，以及新增配置校验/持久化/并发修改/多工作区、环境引用、SDK 本地绑定、Windows 环境变量大小写、shell 激活、包管理器结构化解析、精确 ID/来源/版本、安装取消/失败/成功后刷新、调试会话归属和 toolbar URI 参数回归。
-- 基础 Extension Host 回归：16 项，涵盖 Python/.venv、Go、Rust、JS npm/Node、TS 本地 tsx、C/C++、Java、已有 Maven 任务、标准输入、终端复用、编译失败不运行旧产物、缺少 SDK、重复触发与卸载清理进程。
-- 高级 Extension Host：21 项通过、4 项明确未验证。实际验证混合项目、多工作区、配置切换、参数/env/cwd、Output 执行、指定 Node 可执行文件、Go build/test、npm/pnpm、Cargo workspace/features/test、独立 C/C++ 编译器参数、真实断点与单步、launch/preLaunchTask、Stop 不停止外部会话、Python 环境切换/激活、Homebrew 只读查询。
-
-机器可读报告位于本地 `.test-output/integration.json` 和 `.test-output/advanced-integration.json`，不打包进 VSIX。基础回归 16 项已在 VS Code 1.85.2 通过。最终包已在隔离的 1.85.2 配置中成功安装；高级 Host 同时验证解包后的运行时代码。原生页面的新增/复制/删除/保存/重载与工具链、Homebrew 查询做过手动检查；最后一次原生窗口定位遇到重复 Code bundle ID，未重复执行 SDK 安装确认交互。
-
-## 实际运行与调试矩阵
-
-| 场景 | 本机验证 | 限制 |
+| 检查 | 结果 | 范围 |
 | --- | --- | --- |
-| Python .venv Run / Debug / 新终端激活 | 实际验证 | 通过微软扩展；Conda/uv/pyenv/Poetry 未分别实测 |
-| Go Run / build / test | 实际验证 | Delve 缺失；缺失依赖提示通过，真实 Debug 未验证 |
-| Rust Run / Cargo test / CodeLLDB | 实际验证 | workspace package/bin/features 与实际产物调试通过；新渠道安装未实现 |
-| JS / Node Run / Debug | 实际验证 | 自定义可执行路径通过；仅一个 Node 版本，不能声称不同版本通过 |
-| TS tsx / source-map Debug | 实际验证 | yarn、ts-node、tsc 分支未做端到端实测 |
-| npm / pnpm scripts | 实际验证 | yarn 未实测；复杂脚本 Debug 使用已有 launch |
-| C / C++ Clang 编译与 CodeLLDB | 实际验证 | GCC/GDB/MSVC 未实测 |
-| C++ CMake / Make | 计划和参数逻辑已实现 | CMake 未安装，全流程未验证；复杂项目依赖原生构建配置 |
-| C# run / build / Debug | 仅模型、项目发现与参数契约 | .NET 未安装，真实执行与调试未验证 |
-| Java JDK 单文件/已有 Maven task | 基础回归覆盖 | 完整 Maven/Gradle 构建、Java Debug 未实测 |
-| Homebrew 搜索/详情/已安装状态 | 实际只读验证 | 没有执行真实安装或升级 |
-| APT / WinGet | fixture 解析/安全命令测试 | 当前非对应平台，真实查询/安装未验证 |
-| Linux x86_64 / Windows x64 | 未验证 | 不标记跨平台执行通过 |
+| TypeScript 编译 + ESLint | 通过 | 包括新 Registry、双存储、主机消息协议 |
+| 单元测试 | 71 项通过 | 原 44 项 + 27 项新覆盖 |
+| Firefox Webview 界面脚本测试 | 10 项通过 | 真实 HTML/CSS/JS；主机桥接采用测试适配器，存储使用实际 ConfigurationStore |
+| 基础 Extension Host | 16 项通过 | VS Code 1.85.2，原 Run 回归完整保留 |
+| 高级 Extension Host | 21 项通过，4 项未验证 | VS Code 1.146.0，多语言运行 / 调试 / 多工作区 |
+| 原生 Webview 手动交互 | 已验证 | 隔离的 1.85.2 Host，中文菜单 / 设置树 / 模板 / 个人自动保存 / Go 发现 / 重载恢复 |
+| SDK 真实安装与管理员流程 | 未执行 | 确认 / 取消 / 失败 / 刷新契约用模拟测试；只读 Homebrew 查询实际通过 |
 
-## 六阶段状态
+Browser 插件未提供，界面自动化按 frontend-testing-debugging 工作流使用现有 Firefox Playwright。浅色樱花、深色、高对比度使用 VS Code 主题变量的测试夹具；这些截图证明变量适配和布局，不等同于分别加载三个真实主题。小窗口 540 × 560 与桌面 1240 × 860 已检查，无相关页面脚本异常。
 
-| 阶段 | 已完成与测试 | 尚未实现/已知限制 |
+截图位于 `docs/images/`，为隔离、无用户源码的界面夹具。真实 Extension Host 使用同一批资源，通过原生辅助功能树检查。
+
+## 新增自动化覆盖
+
+- 25 个模板 ID 唯一、所有已有语言均可访问；工厂返回独立且符合 Schema 的草稿，不执行命令或安装。
+- 当前 Go 文件优先、多语言推荐、多根项目所有权；无项目时仍保留全模板目录；跨语言不复用 Go 文件。
+- 缺少 SDK、未检查依赖、最近使用、中文模板标签 / 描述、参数消息 / 英文回退、语言设置默认值与贡献点资源完整性。
+- 个人配置创建 / 重启 / 默认值且不创建项目文件；两种来源统一读取；迁移双向、删除隔离、旧格式兼容、ID 冲突、外部改动、写入中断恢复。
+- 外部 SDK 路径本机绑定、秘密只存引用，不改写 tasks.json / launch.json。
+- 防抖、快速输入 / 配置切换 / 工作区切换、异步串行 / 合并、失败重试、冲突冻结、无效草稿保留、关闭前提交。
+- 主机真实消息处理器的确认门禁、未确认迁移 / 删除拒绝、同时写入修订冲突、无效模块关闭时不写盘。
+- 浏览器中的搜索空状态、方向键 / Enter / Esc / 焦点返回、点击外部关闭、弹窗边界 / 滚动、侧栏调整 / 折叠、结构化参数 / 环境引用、迁移确认、SDK 详情固定分区。
+- JSON 输入中间状态、改正后自动保存、重载恢复草稿、原生文本撤销、中英文切换不改用户名称；三个主题变量集截图。
+
+## 原有执行 / 调试验证范围
+
+| 场景 | 本机结果 | 限制 |
 | --- | --- | --- |
-| 1 统一模型/接口 | 共用配置、适配器契约、旧按钮与命令兼容；单元及 Host | 原生复杂 compound/task 特性仍委托 VS Code |
-| 2 全语言基础 Run/工具链 | 全部要求语言纳入发现、SDK 绑定、配置字段和计划；多语言 Host | 工具链未安装的语言只有契约验证；未枚举所有版本管理器的历史版本 |
-| 3 调试 | 官方 Debug API、已有 launch、依赖提示、会话归属；6 类实际调试 | Go/Java/C# 实际 Debug 未验证；不自动生成不确定的配置 |
-| 4 配置编辑页 | 原生主题 Webview、CRUD、默认配置、持久化、schema | 本地机器 SDK 绑定不随项目分享；换机器需要重新绑定 |
-| 5 环境与终端 | Python 官方 API 协作、单次激活、Node/Go/Rust/.NET 子进程环境 | 复杂 Conda 需官方扩展；没有修改普通终端/全局 Shell；同 .NET 安装版本由 global.json 管理 |
-| 6 多项目/回归 | 隔离多根工作区、路径含空格、错误/清理/源映射测试 | Linux/Windows 原生 Host 及真实管理员安装未验证 |
+| Python .venv Run / Debug / 新终端激活 | 实际通过 | Conda / uv / pyenv / Poetry 未逐个实测 |
+| Go run / build / test | 实际通过 | Delve 不存在，真实 Go Debug 未验证；缺失提示通过 |
+| Cargo run / test / workspace / features / CodeLLDB | 实际通过 | 新 rustup 渠道安装未实现 |
+| JS / Node Run / Debug | 实际通过 | 仅一个真实 Node 版本；另一个自定义可执行路径是同版本复制品 |
+| TS tsx / 源映射断点与单步 | 实际通过 | ts-node / tsc 分支未端到端实测 |
+| npm / pnpm scripts | 实际通过 | yarn 未实测，模板不会自动安装依赖 |
+| C / C++ Clang 编译及 CodeLLDB | 实际通过 | GCC / GDB / MSVC 未实测 |
+| CMake 目标 / Make | 后端计划已有，未完成实际验证 | CMake 缺失；CMake Profile / Preset 的完整管理尚未实现，不提供假字段 |
+| C# run / build / Debug | 只验证参数契约和项目发现 | 缺少 .NET SDK，真实执行 / 调试未验证 |
+| Java 单文件 / 原生 Maven 运行任务 | 实际基础回归通过 | 完整 Maven / Gradle 构建与 Java Debug 未实测 |
+| Homebrew 搜索 / 结构化详情 / 已安装状态 | 实际只读通过 | 未执行真实安装或升级 |
+| APT / WinGet | fixture 解析与命令测试通过 | 非对应系统，真实查询 / 安装未验证 |
+| Linux x86_64 / Windows x64 | 未验证 | 不宣称跨平台原生 Host 通过 |
 
-## 手动验收
+## 真实 Host 的草稿加密限制
 
-1. 在 VS Code 1.85+ 安装本次 VSIX，禁用旧 ID 的 Sakura Runner；Reload Window。打开受支持文件，确认编辑器右上角 Run、Debug、下拉按钮，悬停显示 Sakura Atelier。
-2. 在受信任工作区下拉 → Edit Configurations，新增 Python 配置，选择 `.venv` 解释器、main.py、cwd；参数填写 JSON 数组，环境填写引用。设默认并 Apply。
-3. 复制、重命名、删除副本；关闭并重载窗口，确认配置与当前选择恢复。第二工作区创建同名配置，确认不会串用。
-4. 点击 Run，程序打印 sys.executable、参数与 cwd；设断点点 Debug，确认同一解释器、断点、变量与单步。另开用户调试会话，Sakura Stop 仅结束自己启动的会话。
-5. 执行 Sakura Atelier Python Terminal，检查 python 指向所选环境；重复调用不重复激活。切换解释器后下一次 Run 使用新解释器。普通终端激活仍由官方扩展设置决定。
-6. 用 C/C++ 配置选择编译器、标准、源文件与参数；制造编译错误，确认不会运行上次二进制。复杂 CMake/Make 使用原生项目文件/tasks。
-7. 创建已有 launch.json（可带注释）及 preLaunchTask，通过选择器运行；故意让任务失败，确认不会启动 Debug，原文件不被覆盖。
-8. SDK Manager → Available SDKs → Search。检查真实来源、版本、安装路径。点击 Install 查看原生确认中的完整命令，选择 Cancel，确认没有安装任务。真实安装需由用户审阅后另行明确确认；本次验证未执行。
-9. Toolchains 定位现有 SDK，设置工作区/全局默认，再设置配置级 SDK，验证优先级；不要修改系统 PATH。
-10. 禁用扩展/关闭测试 Host，确认自己启动的进程结束；不应影响用户另外启动的进程。
+为避免误操作用户日常 Code 窗口，原生 UI 使用独立的本地测试应用身份。该身份的 VS Code 系统钥匙串不可用：有效个人配置自动保存、扫描 SDK 和窗口重载恢复已通过；未完成草稿的真实 SecretStorage 加密恢复无法在此身份验证。扩展对此明确提示，**不使用明文文件或 WorkspaceState 保存未验证的原始草稿**。浏览器重载恢复与主机协议测试使用本地模拟 SecretStorage，不能当作 OS 钥匙串通过。
 
-## 打包检查
+若迁移写入中断后项目文件又被外部修改，恢复会暂停并保留本机记录，要求人工检查；不自动覆盖外部文件。文件系统与 VS Code 状态不是一个跨进程数据库事务，修订检查和恢复日志提供保留数据的保护，不声称解决所有外部编辑器同时写入的极小时间窗口。
 
-`npm run package` 生成 `sakura-atelier-0.1.0.vsix`。清单只允许 package.json、运行时 out/src/*.js、schema、界面 JS/CSS/Codicon 字体及许可、公开文档。开发依赖、测试、缓存、用户配置和临时产物均排除。安装兼容性检查使用隔离的 VS Code 1.85.2 用户/扩展目录，不发布 Marketplace。
+## 手动验收步骤
+
+1. 安装 VSIX，禁用旧 ID 的 Sakura Runner，重载窗口。受支持代码文件右上角保留运行 / 调试 / 选择配置，默认中文。通过设置将 `sakuraAtelier.language` 切换为 English 或跟随 VS Code，确认菜单、通知和已有 Webview 更新；VS Code 设置页静态描述由官方 NLS 随 VS Code 显示语言。
+2. 编辑配置，点击左树“添加配置…”，检查当前项目推荐、全语言分组、搜索、最近使用、键盘与小窗口边界。创建 Go / Python / Cargo 配置，检查模板专属字段。
+3. 新配置默认个人来源；等待“已保存”，确认项目没有新配置文件，重载后仍存在。输入未完成的高级 JSON，确认字段错误、有效磁盘数据不变；修正后自动保存。
+4. 修改名称后立即切换配置、页面和工作区，确认输入没有串用。保存失败点击重试。手动修改项目 JSON，再编辑界面，检查冲突状态 / 差异 / 保留草稿，不应覆盖磁盘。
+5. 选择项目保存位置，在原生迁移确认中检查目的地；先取消，再确认。核对共享 JSON 不含 UI 来源字段、私人 SDK 绝对路径和明文密钥。移回个人后其他配置保持不变。
+6. 在配置内选择 SDK、扫描、定位已有文件。开发环境总览和语言子页应显示真实版本 / 路径 / 来源；选择不同 SDK 不修改系统 PATH。移除记录前确认，不删除真实 SDK 文件。
+7. SDK 安装与更新页查询真实软件包，查看固定详情。点击安装只进入原生确认，先取消，确认没有任务启动；真实安装由用户另外明确确认，本次未执行。
+8. 设断点并用原有语言适配器调试，检查 Stop 不影响用户另外启动的会话。故意让构建前任务失败，确认不启动调试；原 launch.json / tasks.json 不被改写。
+9. 关闭页面前有效修改应尽量提交。若系统钥匙串正常，未完成草稿下次打开可恢复；若钥匙串失败，应看到明确说明，且不产生明文回退文件。
+
+## 打包
+
+`npm run package` 生成本地 `sakura-atelier-0.1.0.vsix`。包括运行时代码、schema、本地化资源、设置页面、官方 Codicons 和用户提供的 PNG 图标；排除开发依赖、测试、截图、测试应用、用户设置与缓存。检查包内 ID / 版本 / 最低 API 与全部 Webview 脚本。不会发布 Marketplace、创建 Release 或自动合并 PR。
 
 ## 本轮 macOS 优先 CI
 
 自动 CI 仅在 `macos-latest` 上运行编译、ESLint、全部单元测试、Extension Host 集成测试和 VSIX 打包；不自动发布。纯 Windows/Linux 路径与平台规则单元测试继续保留。主要验收平台为 Apple Silicon；macOS x86_64 需另行实测。
 
 Windows 与 Linux 原生支持验证暂缓，现有跨平台实现保留。Windows Extension Host 已知存在 JDK source launcher、C 编译失败及进程卸载测试挂起的问题，尚未修复或验证通过。取消自动原生任务不代表这些问题已解决。WSL、SSH 与 Dev Containers 保留架构，尚未实机验收。
+

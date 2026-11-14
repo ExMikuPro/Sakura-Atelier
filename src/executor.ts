@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import * as vscode from 'vscode';
 import { randomUUID } from 'node:crypto';
 import { ExecutionBackend, RunPlan, RunnerError, Step } from './model';
@@ -29,7 +30,7 @@ export class TaskExecutor implements vscode.Disposable, ExecutionBackend {
   }
   private runStep(step: Step, folder?: vscode.WorkspaceFolder): Promise<void> {
     const id = randomUUID();
-    const task = new vscode.Task({ type: 'sakuraRunner', sakuraId: id }, folder ?? vscode.TaskScope.Global, step.label, this.source, new vscode.ProcessExecution(step.command, step.args, { cwd: step.cwd, env: step.env }));
+    const task = new vscode.Task({ type: 'sakuraRunner', sakuraId: id }, folder ?? vscode.TaskScope.Global, t(step.label), this.source, new vscode.ProcessExecution(step.command, step.args, { cwd: step.cwd, env: step.env }));
     task.presentationOptions = { echo: this.source.includes('SDK Manager'), reveal: step.terminal === false ? vscode.TaskRevealKind.Never : vscode.TaskRevealKind.Always, panel: vscode.TaskPanelKind.Shared, focus: step.terminal !== false, clear: true, showReuseMessage: false };
     return this.execute(task, execution => execution.task.definition.sakuraId === id);
   }
