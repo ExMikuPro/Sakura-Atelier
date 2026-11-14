@@ -20,6 +20,17 @@ test('an older asynchronous wizard response never replaces newer typed input or 
   await page.goto('data:text/html,' + encodeURIComponent(renderWizardHtml({ nonce: 'test', cspSource: 'data:', codiconUri: 'data:text/css,', cssLanguage: 'zh-CN', title: 'Wizard' })));
   const revision = await page.evaluate(() => window.__messages.at(-1).clientRevision);
   await page.evaluate(({ view, revision }) => window.postMessage({ type: 'view', view, clientRevision: revision }, '*'), { view, revision });
+  const python = page.locator('#nav button').filter({ hasText: 'Python 项目' });
+  await expect(python).toBeVisible();
+  const bounds = await python.boundingBox();
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  // A background SDK/catalog refresh can arrive while a real click is in progress.
+  await page.evaluate(({ view, revision }) => window.postMessage({ type: 'view', view, clientRevision: revision }, '*'), { view, revision });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => window.__messages.at(-1).type)).toBe('selectTemplate');
+  const selectionRevision = await page.evaluate(() => window.__messages.at(-1).clientRevision);
+  await page.evaluate(({ view, revision }) => window.postMessage({ type: 'view', view, clientRevision: revision }, '*'), { view, revision: selectionRevision });
   await page.locator('#name').fill('newest-user-input');
   await page.evaluate(({ view, revision }) => window.postMessage({ type: 'view', view, clientRevision: revision }, '*'), { view, revision });
   await expect(page.locator('#name')).toHaveValue('newest-user-input');

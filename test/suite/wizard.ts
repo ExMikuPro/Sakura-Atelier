@@ -68,10 +68,15 @@ export async function run(): Promise<void> {
   await expect.poll(() => fs.stat(path.join(root, 'LanguageHostPython/src/main.py')).then(s => s.isFile(), () => false)).toBe(true);
   const projectConfig = JSON.parse(await fs.readFile(path.join(root, 'LanguageHostPython/.vscode/sakura-atelier.json'), 'utf8'));
   assert.equal(projectConfig.configurations[0].templateId, 'python.script');
+  // File writes precede draft persistence and the completion notification.
+  // Wait for completion before closing/reopening the wizard.
+  await expect(page.locator('.notification-list-item').filter({ hasText: 'LanguageHostPython' })).toBeVisible();
   await vscode.commands.executeCommand('notifications.clearAll');
   await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
   frame = await wizard();
-  await frame.locator('#nav button').filter({ hasText: 'STM32CubeMX' }).first().click();
+  const stm32 = frame.locator('#nav button').filter({ hasText: 'STM32CubeMX' }).first();
+  await stm32.click();
+  await expect(stm32).toHaveAttribute('aria-pressed', 'true');
   await frame.locator('#tabs button').filter({ hasText: 'STM32 MCU' }).click();
   await frame.locator('#search').fill('F401');
   const row = frame.locator('#rows .row').filter({ hasText: 'STM32F401RET6' });

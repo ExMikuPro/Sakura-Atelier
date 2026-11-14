@@ -67,7 +67,7 @@ pre.preview { margin: 0; white-space: pre-wrap; word-break: break-all; font-fami
 
 export const wizardScript = `
 const vscode = acquireVsCodeApi();
-let view; let timer; let clientRevision = 0;
+let view; let timer; let clientRevision = 0; let navSignature;
 const send = m => vscode.postMessage({ ...m, clientRevision: ++clientRevision });
 function el(tag, props, ...kids) {
   const n = document.createElement(tag);
@@ -78,6 +78,10 @@ function el(tag, props, ...kids) {
 const icon = name => el('span', { class: 'codicon codicon-' + name, 'aria-hidden': 'true' });
 const L = k => (view && view.labels[k]) || k;
 function renderNav() {
+  // Discovery updates must not replace a button between pointer down and click.
+  const signature = JSON.stringify([view.templates, view.favoriteTemplates, view.labels]);
+  if (signature === navSignature) return;
+  navSignature = signature;
   const nav = document.getElementById('nav'); nav.replaceChildren();
   nav.append(el('h2', {}, L('Project types')));
   for (const category of ['general', 'embedded']) {
