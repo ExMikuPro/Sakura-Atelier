@@ -45,6 +45,10 @@
         "icon": "$(debug-alt)"
       },
       {
+        "command": "sakuraAtelier.embedded.manageTools",
+        "title": "%command.sakuraAtelier.embedded.manageTools%"
+      },
+      {
         "command": "sakuraAtelier.selectConfiguration",
         "title": "%command.sakuraAtelier.selectConfiguration%",
         "icon": "$(chevron-down)"

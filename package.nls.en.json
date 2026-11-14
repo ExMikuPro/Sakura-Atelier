@@ -54,5 +54,6 @@
   "enum.sakuraAtelier.language.2": "English",
   "extension.description": "Unified project Run, Debug, configuration editor and cross-platform SDK Manager.",
   "trust.description": "Running code requires a trusted workspace.",
-  "task.sakuraId": "Unique identity for a concrete Sakura Atelier task execution."
+  "task.sakuraId": "Unique identity for a concrete Sakura Atelier task execution.",
+  "command.sakuraAtelier.embedded.manageTools": "Sakura Atelier: Embedded Tools..."
 }

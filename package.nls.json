@@ -54,5 +54,6 @@
   "enum.sakuraAtelier.language.2": "English",
   "extension.description": "统一的项目运行、调试、运行配置编辑器与跨平台 SDK 管理器。",
   "trust.description": "运行代码需要先信任工作区。",
-  "task.sakuraId": "Sakura Atelier 具体任务执行的唯一标识。"
+  "task.sakuraId": "Sakura Atelier 具体任务执行的唯一标识。",
+  "command.sakuraAtelier.embedded.manageTools": "Sakura Atelier：嵌入式工具链…"
 }
