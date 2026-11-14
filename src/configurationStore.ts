@@ -1,3 +1,4 @@
+import { hostToolchains } from './environment/registryAccess';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -23,7 +24,7 @@ export class ConfigurationStore {
     try { return { document: validateFile(JSON.parse(content)), revision: digest(content) }; }
     catch (error) { throw new RunnerError(`${path.basename(file)}: ${error instanceof Error ? error.message : String(error)}`, true); }
   }
-  toolchains(folder?: vscode.WorkspaceFolder): LocalToolchain[] { return this.context.globalState.get<LocalToolchain[]>('atelier.toolchains', []).filter(t => !t.project || !folder || t.project === folder.uri.toString()); }
+  toolchains(folder?: vscode.WorkspaceFolder): LocalToolchain[] { const legacy=this.context.globalState.get<LocalToolchain[]>('atelier.toolchains', []).filter(t => !t.project || !folder || t.project === folder.uri.toString());const global=hostToolchains()?.asLocalToolchains(folder?.uri.toString()??'')??[];const visibleLegacy=hostToolchains()?.guard.environment.kind&&hostToolchains()!.guard.environment.kind!=='local'?[]:legacy;return [...new Map([...visibleLegacy,...global].map(t=>[t.id,t])).values()]; }
   async putToolchains(toolchains: LocalToolchain[], folder: vscode.WorkspaceFolder): Promise<void> {
     if (!Array.isArray(toolchains) || toolchains.length > 200) { throw new RunnerError('Invalid toolchain list.'); }
     for (const t of toolchains) {
@@ -32,6 +33,7 @@ export class ConfigurationStore {
     }
     const others = this.context.globalState.get<LocalToolchain[]>('atelier.toolchains', []).filter(t => t.project && t.project !== folder.uri.toString());
     await this.context.globalState.update('atelier.toolchains', [...others, ...toolchains]);
+    const registry=hostToolchains();if(registry){for(const tool of toolchains){await registry.add(tool,tool.manager==='custom');}}
   }
   defaultToolchain(language: string, folder: vscode.WorkspaceFolder): string {
     return this.context.workspaceState.get<string>(`atelier.sdk:${folder.uri.toString()}:${language}`) ?? this.context.globalState.get<string>(`atelier.sdk:${language}`, '');

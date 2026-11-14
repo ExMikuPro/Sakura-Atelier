@@ -1,3 +1,4 @@
+import { startHostToolchains } from './environment/hostServices';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
@@ -10,6 +11,7 @@ import { AtelierController } from './controller';
 let executor: TaskExecutor | undefined;
 let controller: AtelierController | undefined;
 export function activate(context: vscode.ExtensionContext): void {
+  context.subscriptions.push(startHostToolchains(context));
   executor = new TaskExecutor();
   controller = new AtelierController(context,executor,mode=>run(mode,()=>controller!.openManager()));
   context.subscriptions.push(executor,controller);
