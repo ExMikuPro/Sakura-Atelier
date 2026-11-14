@@ -61,6 +61,12 @@ jobs:
         run: npm run test:projects
       - name: Run actual new-project wizard UI in stable VS Code
         run: npm run test:wizard
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wizard-ui-evidence
+          path: ${{ runner.temp }}/sakura-wizard-evidence
+          if-no-files-found: ignore
 
   package:
     name: Package VSIX

@@ -79,9 +79,9 @@ export async function planCreation(request: CreationRequest, context: CreationCo
   if (!path.isAbsolute(request.parentDir) || !await context.fs.isDirectory(request.parentDir)) { block('parent', 'The save location must be an existing folder.'); }
   else if (!nameProblem && await context.fs.exists(target)) { block('exists', `"${request.name}" already exists in this folder. Choose another name; existing files are never overwritten.`); }
 
-  if (template.backend === 'general' && template.language) {
-    const files = projectScaffold(template.language, request.name || 'my-project');
-    if (!context.tools.runtimes?.[runtimeForProject(template.language)]) warnings.push({ code: 'no-runtime', message: 'The project can be created; configure its SDK before Run or Debug.' });
+  if (template.backend === 'general') {
+    const files = template.language ? projectScaffold(template.language, request.name || 'my-project') : [];
+    if (template.language && !context.tools.runtimes?.[runtimeForProject(template.language)]) warnings.push({ code: 'no-runtime', message: 'The project can be created; configure its SDK before Run or Debug.' });
     if (template.language === 'typescript') warnings.push({ code: 'project-dependencies', message: 'Install the declared project dependencies before Run. Creation does not install them.' });
     if (!blockers.length) {
       steps.push({ kind: 'mkdir', path: target });

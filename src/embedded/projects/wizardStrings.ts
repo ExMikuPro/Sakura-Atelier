@@ -2,6 +2,9 @@ import { embeddedChinese, UiLanguage } from '../strings';
 
 /** Chinese text for the project wizard. Same English-key convention as the shared dictionary of PR #1. */
 export const wizardChinese: Record<string, string> = {
+  'Empty project': '空项目',
+  'Create an empty folder without source files, dependencies or run configurations.': '仅创建空文件夹，不生成源码、依赖或运行配置。',
+  'No files will be created.': '不生成任何文件。',
   'Programming languages': '编程语言', 'Embedded projects': '嵌入式项目', 'Files to create': '将创建的文件',
   'Python project': 'Python 项目', 'JavaScript / Node.js project': 'JavaScript / Node.js 项目', 'TypeScript project': 'TypeScript 项目',
   'Go project': 'Go 项目', 'Rust / Cargo project': 'Rust / Cargo 项目', 'C project': 'C 项目', 'C++ project': 'C++ 项目', 'C# / .NET project': 'C# / .NET 项目', 'Java project': 'Java 项目',
@@ -70,6 +73,7 @@ export function wizardText(language: UiLanguage, message: string, ...args: unkno
 
 /** Static labels the page needs. The page itself contains no text of its own; everything comes translated from here. */
 export const wizardLabelKeys = [
+  'No files will be created.',
   'Programming languages', 'Embedded projects', 'Files to create', 'New project', 'Project types', 'My favorite templates', 'Search by name, part number, vendor, platform or board id', 'Reload devices', 'Clear recent devices',
   'Add to favorites', 'Remove from favorites', 'Device', 'Framework', 'Build system', 'SDK and toolchain', 'Project name', 'Save location', 'Browse...', 'Preview',
   'Create project', 'Save this configuration as favorite', 'Remove this favorite configuration', 'Select a device', 'Select a framework', 'Choose...', 'Locate...',

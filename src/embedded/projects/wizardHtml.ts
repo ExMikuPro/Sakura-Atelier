@@ -99,7 +99,7 @@ function renderNav() {
 function renderList() {
   const list = document.getElementById('list');
   if (!view.needsDevice) {
-    list.replaceChildren(el('h1', {}, L('New project')), el('p', {}, view.description), el('h2', {}, L('Files to create')), el('ul', { class: 'project-files' }, view.projectFiles.map(file => el('li', {}, file))));
+    list.replaceChildren(el('h1', {}, L('New project')), el('p', {}, view.description), el('h2', {}, L('Files to create')), view.projectFiles.length ? el('ul', { class: 'project-files' }, view.projectFiles.map(file => el('li', {}, file))) : el('p', { class: 'project-files' }, L('No files will be created.')));
     return;
   }
   let search = document.getElementById('search');

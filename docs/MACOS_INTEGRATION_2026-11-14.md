@@ -38,7 +38,7 @@ GitHub API 已逐项核实 #1～#15 均为 **MERGED**，并核实以下合并提
 | Node.js / npm | v26.13.0 / 11.20.0 |
 | VS Code | 1.85.2 最低版本 Host；1.146.0 真实 UI 与高级调试 |
 | 依赖安装、TypeScript、ESLint | 通过 |
-| 全部单元测试 | 269 项：266 通过，3 项依赖真实 PlatformIO Core 而未执行；0 失败 |
+| 全部单元测试 | 270 项：267 通过，3 项依赖真实 PlatformIO Core 而未执行；0 失败 |
 | Firefox UI | 15 项通过；包括总览归属、SDK 别名显示、配置自动保存、冲突与向导过期响应 |
 | 基础 Extension Host | 18 项通过：旧 Run、.ioc 只读编辑器、向导打开与关闭、进程清理等 |
 | SDK 专门 Host | 真实发现 Python、Go、Node、Rust、C/C++、Java；检查宿主 ARM64、项目边界与全局存储 |

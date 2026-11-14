@@ -7,7 +7,7 @@ import { chromium, expect, Frame, Page } from '@playwright/test';
 
 export async function run(): Promise<void> {
   const root = process.env.SAKURA_TEST_WORKSPACE!;
-  const evidence = path.join(os.tmpdir(), 'sakura-wizard-evidence');
+  const evidence = path.join(process.env.RUNNER_TEMP ?? os.tmpdir(), 'sakura-wizard-evidence');
   await fs.mkdir(evidence, { recursive: true });
   await fs.writeFile(path.join(root, 'wizard-fixture.ioc'), 'Mcu.Name=STM32F401RET6\nMcu.UserName=STM32F401RET6\nProjectManager.ProjectName=Fixture\n');
   const extension = vscode.extensions.getExtension('ExMikuPro.sakura-atelier');
@@ -21,13 +21,14 @@ export async function run(): Promise<void> {
     let frame: Frame | undefined;
     await expect.poll(async () => {
       for (const candidate of page.frames()) {
-        if (await candidate.locator('.wizard #detail').count().catch(() => 0)) { frame = candidate; return true; }
+        if (await candidate.locator('.wizard #detail').count().catch(() => 0) && await candidate.frameElement().then(element => element.isVisible()).catch(() => false)) { frame = candidate; return true; }
       }
       return false;
     }, { timeout: 30000 }).toBe(true);
     return frame!;
   }
   async function screenshot(page: Page, name: string) { await page.screenshot({ path: path.join(evidence, name + '.png') }); }
+  try {
   const source = path.join(root, 'overview-fixture.py');
   await fs.writeFile(source, 'print("overview fixture")\n');
   await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(source));
@@ -55,6 +56,8 @@ export async function run(): Promise<void> {
   assert.ok(vscode.window.tabGroups.activeTabGroup.activeTab?.input instanceof vscode.TabInputWebview);
   await expect(frame.locator('#detail')).toContainText('SDK 与工具链');
   await expect(frame.locator('#create')).toBeDisabled();
+  await frame.locator('#nav button').filter({ hasText: '空项目' }).click();
+  await expect(frame.locator('.project-files')).toContainText('不生成任何文件');
   for (const label of ['Python', 'JavaScript / Node.js', 'TypeScript', 'Go', 'Rust / Cargo', 'C 项目', 'C++', 'C# / .NET', 'Java 项目']) {
     await expect(frame.locator('#nav button').filter({ hasText: label }).first()).toBeVisible();
   }
@@ -122,5 +125,17 @@ export async function run(): Promise<void> {
   assert.deepEqual(errors, []);
   await fs.writeFile(path.join(evidence, 'result.json'), JSON.stringify({ platform: process.platform, arch: process.arch, vscode: vscode.version, status: 'passed', checks: ['language types and actual Python project creation', 'overview in main pane', 'File > New File picker entry', 'real command and Webview', 'Chinese UI', 'SDK availability', 'device search', 'one-click favorite', 'favorite templates', 'draft restore', 'existing directory protection', 'directory creation', 'dark/light themes', 'narrow layout'], errors }, null, 2));
   console.log('PASS actual wizard UI; evidence: ' + evidence);
+  } catch (error) {
+    await screenshot(page, 'failure').catch(() => {});
+    for (const candidate of page.frames()) {
+      if (!await candidate.locator('.wizard').count().catch(() => 0)) continue;
+      console.log('Wizard failure state:', JSON.stringify({
+        selected: await candidate.locator('#nav button[aria-pressed="true"]').allTextContents().catch(() => []),
+        detail: await candidate.locator('#detail').textContent().catch(() => ''),
+        tabs: await candidate.locator('#tabs').allTextContents().catch(() => []),
+      }));
+    }
+    throw error;
+  }
   // Extension test runner closes this disposable window after run() returns.
 }

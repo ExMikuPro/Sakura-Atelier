@@ -168,7 +168,7 @@ test('a favorite whose board, framework, template or PlatformIO is unavailable i
 
 test('the registry holds project templates apart from adapters, backends and run targets', () => {
   const registry = new AdapterRegistry(); for (const t of builtinProjectTemplates) { registry.projectTemplates.register(t.id, t); }
-  assert.deepEqual(registry.projectTemplates.keys(), ['general.python', 'general.node', 'general.typescript', 'general.go', 'general.rust', 'general.c', 'general.cpp', 'general.csharp', 'general.java', 'platformio.board', 'stm32.cubemx', 'stm32.import']);
+  assert.deepEqual(registry.projectTemplates.keys(), ['general.empty', 'general.python', 'general.node', 'general.typescript', 'general.go', 'general.rust', 'general.c', 'general.cpp', 'general.csharp', 'general.java', 'platformio.board', 'stm32.cubemx', 'stm32.import']);
   assert.equal(registry.backends.size, 0);
 });
 

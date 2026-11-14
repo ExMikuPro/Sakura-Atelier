@@ -14,12 +14,13 @@ export interface ProjectTemplate {
   /** Device kinds this template accepts. Empty means no device is needed (importing an existing project). */
   readonly deviceKinds: readonly DeviceKind[];
   /** Build system name shown in the wizard and kept in favorite templates. */
-  readonly buildSystem: 'platformio' | 'cubemx' | 'existing' | 'language';
+  readonly buildSystem: 'platformio' | 'cubemx' | 'existing' | 'language' | 'empty';
   readonly needsFramework: boolean;
   readonly icon: string;
 }
 
 export const builtinProjectTemplates: readonly ProjectTemplate[] = [
+  { id: 'general.empty', label: 'Empty project', description: 'Create an empty folder without source files, dependencies or run configurations.', backend: 'general', deviceKinds: [], buildSystem: 'empty', needsFramework: false, icon: 'folder' },
   ...projectLanguages.map(spec => ({ id: 'general.' + spec.language, label: spec.label, description: 'Create source files, project metadata and a Sakura Atelier run configuration.', backend: 'general' as const, language: spec.language, deviceKinds: [], buildSystem: 'language' as const, needsFramework: false, icon: 'code' })),
   { id: 'platformio.board', label: 'PlatformIO project', description: 'Create a project for a PlatformIO board with the official PlatformIO CLI.', backend: 'platformio', deviceKinds: ['pio-board'], buildSystem: 'platformio', needsFramework: true, icon: 'circuit-board' },
   { id: 'stm32.cubemx', label: 'STM32CubeMX project', description: 'Create the project folder and configure the device in STM32CubeMX. Code generation is done by STM32CubeMX.', backend: 'stm32', deviceKinds: ['stm32-mcu', 'stm32-board'], buildSystem: 'cubemx', needsFramework: false, icon: 'chip' },

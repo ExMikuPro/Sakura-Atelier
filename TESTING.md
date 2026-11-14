@@ -29,7 +29,7 @@ Java 路径只是本机测试时显式提供的 SDK，不是扩展的默认目�
 | 检查 | 结果 | 范围 |
 | --- | --- | --- |
 | TypeScript 编译 + ESLint | 通过 | 包括新 Registry、双存储、主机消息协议 |
-| 单元测试 | 266 项通过，3 项可选 CLI 未执行 | 保留所有测试；本机无 PlatformIO Core |
+| 单元测试 | 267 项通过，3 项可选 CLI 未执行 | 保留所有测试；本机无 PlatformIO Core |
 | Firefox Webview 界面脚本测试 | 15 项通过 | 真实 HTML/CSS/JS；主机桥接采用测试适配器，存储使用实际 ConfigurationStore |
 | 基础 Extension Host | 18 项通过 | VS Code 1.85.2，原 Run 回归完整保留 |
 | 高级 Extension Host | 19 项通过，5 项未验证 | VS Code 1.146.0，多语言运行 / 调试 / 多工作区 |

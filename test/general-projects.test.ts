@@ -28,6 +28,20 @@ const writesOnly = {
   run: async () => { throw new Error('Scaffolding must not execute SDKs or install packages.'); },
   confirm: async () => false, launch: () => { throw new Error('Scaffolding must not launch external applications.'); },
 };
+test('empty project creates only an empty directory without an SDK and refuses existing content', () => fixture(async root => {
+  const request = { templateId: 'general.empty', parentDir: root, name: 'EmptyProject' };
+  const plan = await planCreation(request, context('empty'));
+  assert.deepEqual(plan.blockers, []);
+  assert.deepEqual(plan.warnings, []);
+  assert.deepEqual(plan.steps.map(step => step.kind), ['mkdir', 'open']);
+  const result = await executeCreation(plan, writesOnly);
+  assert.equal(result.open, path.join(root, 'EmptyProject'));
+  assert.deepEqual(await fs.readdir(result.target), []);
+  await fs.writeFile(path.join(result.target, 'keep.txt'), 'keep');
+  assert.ok((await planCreation(request, context('empty'))).blockers.some(b => b.code === 'exists'));
+  await assert.rejects(executeCreation(plan, writesOnly));
+  assert.equal(await fs.readFile(path.join(result.target, 'keep.txt'), 'utf8'), 'keep');
+}));
 for (const spec of projectLanguages) {
   test(`${spec.label} creates real source/project files readable by the existing configuration store without an SDK`, () => fixture(async root => {
     const plan = await planCreation({ templateId: 'general.' + spec.language, parentDir: root, name: 'My.Project' }, context(spec.language));
