@@ -57,7 +57,7 @@ test('Go project first; Run File passes a single absolute argument with spaces',
 test('project mode reports absent project', () => fixture(async dir => { await assert.rejects(createPlans(context(dir, { mode: 'project' })), /No supported project/); }));
 test('missing SDK produces an explicit actionable error', () => fixture(async dir => { await assert.rejects(resolveTool('sakura-nonexistent-sdk', dir, { PATH: '' }), /Missing toolchain/); }));
 test('tool path with spaces stays an executable, without shell parsing', () => fixture(async dir => {
-  const tool = path.join(dir, 'tool & $'); await fs.writeFile(tool, '#!/bin/sh\nexit 0\n', { mode: 0o755 }); assert.equal(await resolveTool(tool, dir), tool);
+  const tool = path.join(dir, process.platform === 'win32' ? 'tool & $.exe' : 'tool & $'); await fs.writeFile(tool, '#!/bin/sh\nexit 0\n', { mode: 0o755 }); assert.equal(await resolveTool(tool, dir), tool);
 }));
 test('C/C++ compile into cache and never source directory', () => fixture(async dir => {
   for (const language of ['c', 'cpp'] as const) {
