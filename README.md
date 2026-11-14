@@ -1,94 +1,114 @@
-# Sakura Atelier
+<div align="center">
 
-统一的项目运行、调试、运行配置与 SDK 管理扩展。
+<img src="media/icon.png" alt="Sakura Atelier Logo" width="160" />
 
-- 名称：**Sakura Atelier**
-- 扩展 ID：**ExMikuPro.sakura-atelier**
-- 版本：**0.1.0**（按项目要求，发布 Marketplace 前保持此版本）
-- VS Code：**1.85.0+**；开发构建使用 Node.js 22+、npm。
+# 🌸 Sakura Atelier
 
-沿用现有 `sakura-runner` 项目增量开发，不依赖 Sakura White Theme 或 Code Runner。
+**连接桌面软件与嵌入式系统的统一多语言跨平台 VS Code 开发工作空间**
 
-## 安装与工具栏
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.85.0%2B-007ACC?style=flat-square&logo=visual-studio-code)](https://code.visualstudio.com/)
+[![Version](https://img.shields.io/badge/Version-0.1.0-f48fb1?style=flat-square)](https://github.com/ExMikuPro/Sakura-Atelier)
+[![Language](https://img.shields.io/badge/Language-简体中文%20%7C%20English-880e4f?style=flat-square)](#5-双语支持与架构特性)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20(ARM64)%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square)](#当前状态与验证范围)
 
-通过扩展视图 → 更多 → Install from VSIX 安装 `sakura-atelier-0.1.0.vsix`，然后 Reload Window。如果安装过 `sakura-runner-local.sakura-runner`，请禁用或卸载旧扩展，避免两份扩展同时提供按钮。新 ID 是独立扩展，不会自动替换旧 ID 的安装或迁移旧扩展的私有 WorkspaceState。
+[核心理念](#核心理念) • [核心功能](#核心功能) • [支持的语言与嵌入式生态](#支持的语言与嵌入式生态) • [快速开始](#快速开始) • [配置与安全机制](#配置与安全机制) • [项目结构](#项目结构)
 
-打开受支持的本地代码文件后，在**编辑器标签栏右上角、分屏和更多菜单旁**显示 Run、Debug、Select Configuration。Stop 仅在本扩展拥有运行或调试执行时显示。全部使用内置 Codicons 与官方 `editor/title` 菜单。采用 `navigation@1` 至 `@4`：VS Code 1.85 会将 `1_run` 分组放进更多菜单。其他扩展也可能提供自己的运行按钮。
+</div>
 
-不绑定 F5、不修改用户快捷键或 VS Code 内部文件。未信任工作区禁止运行、调试、发现工具链和安装。启动时只做工作区范围内的项目元数据发现，不执行项目命令。
+---
 
-## 新建项目
+## 核心理念
 
-通过“文件 → 新建文件… → Sakura Atelier：新建项目…”、命令面板或配置页导航，创建 Python、JavaScript/Node.js、TypeScript、Go、Rust、C、C++、C#、Java 基础项目。PlatformIO 与 STM32 类型保留在同一向导中。创建前展示文件清单，复用现有运行配置与 SDK 检查，保护已存在目录。详见 [新建项目](docs/PROJECT_CREATION.md)。
+**Sakura Atelier**（扩展 ID：`ExMikuPro.sakura-atelier`）是一款基于 Visual Studio Code 开发的开源、多语言、跨平台开发辅助扩展。
 
-## 命令
+在日常开发中，开发者往往需要在不同的语言插件、构建脚本、终端命令行与硬件烧录软件之间频繁切换。Sakura Atelier 致力于将**项目创建、代码运行、断点调试、运行配置、SDK 管理与嵌入式工具链**整合到统一、简洁且可移植的工作流中：
 
-| 命令 ID | 用途 |
-| --- | --- |
-| `sakuraAtelier.run` | 用当前配置运行 |
-| `sakuraAtelier.debug` | 用同一配置调试；缺少适配器明确报错 |
-| `sakuraAtelier.selectConfiguration` | 原生 QuickPick 选择 Auto、文件、项目、测试、已有任务或 launch 配置 |
-| `sakuraAtelier.editConfigurations` | 编辑配置 |
-| `sakuraAtelier.addConfiguration` | 添加配置 |
-| `sakuraAtelier.manageToolchains` | 工具链发现与选择 |
-| `sakuraAtelier.sdkManager` | SDK 搜索、详情、安装入口与本地绑定 |
-| `sakuraAtelier.pythonTerminal` | 创建使用所选 Python 环境的新终端 |
-| `sakuraAtelier.runFile` / `runProject` | 保留原有直接运行模式 |
-| `sakuraAtelier.stop` | 停止本扩展拥有的执行/调试 |
+- **统一入口，拒绝割裂**：所有语言与硬件工程共用同一套编辑器顶部工具栏（`Run` / `Debug` / `Select Configuration` / `Stop`）与可视化设置中心，不抢占快捷键（如 `F5`），不侵入修改用户全局配置或已有 `launch.json` / `tasks.json`。
+- **生态复用，克制设计**：采用模块化适配器架构（`RuntimeAdapter`），充分复用官方编译器、调试扩展（如 CodeLLDB、Python Debugger、Cortex-Debug、PlatformIO IDE）与系统包管理器，不重复造轮子。
+- **边界清晰，安全可控**：个人本地路径与项目共享配置严格隔离；所有涉及安装、烧录、删除或覆写的操作均设有原生二次确认，未信任工作区默认禁止执行扫描与外部命令。
 
-旧 `sakuraRunner.*` 命令和已有设置继续兼容。`sakuraRunner.defaultMode` 支持 auto/file/project；不会首次启动就写入 settings.json。
+---
 
-## 设置中心与配置模板
+## 核心功能
 
-通过“选择运行配置 → 编辑配置…”打开同一个设置中心。左侧是可展开的设置树，右侧是详情；侧栏支持拖动、方向键调整宽度和窄窗口收起。没有顶部横向标签，也没有底部 Save/Apply/Cancel。
+### 1. 统一运行、调试与配置中心
+- **可视化设置中心**：提供左侧树状导航与右侧表单的统一管理界面，支持**停止输入 700ms 自动保存**、外部磁盘文件冲突检测与差异对比，以及基于 VS Code `SecretStorage` 的本地加密草稿恢复。
+- **25 套内置配置模板**：覆盖主流语言的运行、构建、测试与现有前台任务，支持逐行编辑启动参数（`args`）与环境变量（支持 `${env:NAME}` 与 `${secret:NAME}` 密钥引用）。
+- **个人与项目双存储模式**：
+  - **个人配置（默认）**：保存在本机工作区状态中，不产生 `.vscode/` 文件，不污染 Git 仓库。
+  - **项目配置**：保存至 `.vscode/sakura-atelier.json`，自动将工作区路径转换为 `${workspaceFolder}` 等可移植变量，便于团队协作共享。
 
-- **运行与调试配置**：统一列表、新增模板、复制、重命名、删除及默认配置。
-- **开发环境**：总览、Go、Rust、Python、Node.js、独立 C / C++ 编译器、.NET、Java。
-- **SDK 安装与更新**：已安装、可安装、更新；软件包列表与固定详情区域分开。
+### 2. 统一项目创建向导
+通过菜单 **文件 → 新建文件… → Sakura Atelier：新建项目…** 或命令面板启动三栏式创建向导（详见 [新建项目说明](docs/PROJECT_CREATION.md)）：
+- **通用软件工程**：一键生成包含规范目录结构、基础源码、`.gitignore` 与初始运行配置的 Python、JavaScript/Node.js、TypeScript、Go、Rust、C、C++、C#、Java 及空项目工程。
+- **嵌入式工程与器件收藏**：支持按型号、厂商、MCU 系列检索 PlatformIO 开发板与 STM32 MCU/开发板；支持一键星标收藏常用器件及“项目配置模板”（仅同步器件与框架标识，绝不泄露本机路径与串口信息）。
+- **严格目录保护**：创建前完整预览文件清单，采用排他写入机制，绝不覆盖或合并已存在的非空目录。
 
-点击“添加配置…”后，按钮旁弹出紧凑模板选择器。所有语言始终可访问，当前文件与项目清单只影响推荐顺序。支持模糊搜索、最近使用、分组折叠、方向键、Enter、Esc 和点击外部关闭；焦点会返回入口。可在选择器中切换工作区 / 检测到的项目根目录。
+### 3. SDK Manager 与开发环境检测
+- **多语言环境自动发现**：自动探测本机已安装的 Python（支持虚拟环境 `.venv` 与终端自动激活）、Node.js、Go、Rust（`rustup` 工具链）、GCC/Clang/MSVC、.NET SDK 与 JDK，支持按**单个配置 > 工作区默认 > 全局默认 > 自动发现**的优先级解析。
+- **原生包管理器对接**：内置“SDK 安装与更新”视图，在用户明确确认后调用原生终端执行安装，支持 **Homebrew**（macOS）、**APT**（Debian/Ubuntu）与 **WinGet**（Windows），不擅自修改系统全局 `PATH` 或符号链接。
 
-首批 **25 个模板**直接绑定已有执行后端：
+### 4. 嵌入式开发工作流（PlatformIO & STM32）
+更多细节请参阅 [嵌入式开发使用说明](docs/embedded-development-zh.md)：
+- **PlatformIO 集成**：自动解析 `platformio.ini` 中的多环境（`[env:*]`），提供构建（Build）、清理（Clean）、上传（Upload）、串口监视器（Monitor）、测试及调试入口。
+- **STM32 独立工程流**：支持识别 STM32CubeMX 与 STM32 CMake 工程，自动发现 Arm GNU Toolchain、CMake、Ninja、STM32CubeProgrammer 与 ST-LINK GDB Server。
+- **操作严格分离**：将 **Build（构建）**、**Flash（烧录）** 与 **Debug（调试）** 拆分为独立动作，普通运行绝不会误触发硬件烧录，烧录过程仅执行编程与校验，拒绝整片擦除参数。
+- **专用 `.ioc` 只读视图**：双击 `.ioc` 文件即可在 VS Code 内直观查看工程与 MCU 摘要，并提供安全唤起本地 STM32CubeMX 的入口（SSH/WSL/容器远程环境下自动禁用本地启动并给出提示）。
 
-| 分组 | 模板 |
-| --- | --- |
-| Go | 应用程序、构建、测试 |
-| Rust / Cargo | 运行、构建、测试、示例 |
-| Python | 脚本、模块、Pytest |
-| JavaScript / TypeScript / Node.js | Node.js 应用程序、JavaScript 文件、TypeScript 文件、npm / pnpm / yarn 脚本 |
-| C / C++ / CMake | C 源文件、C++ 源文件、CMake 应用程序 |
-| C# / .NET | 应用程序、构建、测试 |
-| Java | 应用程序、Maven / Gradle 任务 |
-| 通用 | 已有 VS Code 前台任务 |
+### 5. 双语支持与架构特性
+- **即时中英双语切换**：通过 `sakuraAtelier.language`（支持 `zh-cn`、`en`、`auto`）即时切换设置中心、模板、状态提示与确认弹窗语言，同时保持用户自定义名称与工具原始输出不被篡改。
+- **向后兼容**：完整保留旧版 `sakuraRunner.*` 命令别名与 `.vscode/sakura-runner.json` 配置兼容。
 
-Kotlin、Node Attach、Compound、独立 CMake Debug / Preset 模板暂未实现，不显示虚假入口。CMake 应用程序仍可通过已有执行器和对应调试扩展调试，但需要项目、构建目标及实际产物路径；不猜测二进制文件位置。
+---
 
-选择模板只生成草稿，不执行项目命令、不扫描 SDK 版本、不安装软件。新配置的有效字段随后按自动保存策略保存；未完成的模块名称、目标和 JSON 输入留在草稿中。跨语言模板不会把当前活动文件当作所有语言的入口。配置表单按模板展示字段，参数和环境变量使用逐行编辑器，编译参数、原生任务、调试覆盖及复杂 JSON 放在高级选项。
+## 支持的语言与嵌入式生态
 
-配置中的 SDK 下拉可直接选择项目默认、已发现 SDK、扫描本机、选择已有路径或进入安装页。缺少 SDK 不妨碍编辑，但不会标为已就绪；“尚未检查”只表示定位到可执行文件，仍由 Run 验证版本、目标与依赖。扫描是用户显式操作，安装另外确认。不修改系统默认 SDK 或全局环境。
+| 类别 | 语言 / 平台 | 核心能力 | 协同调试 / 底层工具 |
+| :--- | :--- | :--- | :--- |
+| **通用软件** | **Python** | 脚本、模块（`-m`）、Pytest、虚拟环境识别与终端激活 | Python Debugger |
+| | **JavaScript / TypeScript** | Node.js 运行、npm/pnpm/yarn 脚本、本地 `tsx` / `ts-node` / `tsc` | 内置 JavaScript Debugger |
+| | **Go** | `go run` / `build` / `test`、`go.mod` / `go.work`、`GOROOT` 管理 | Go 扩展 + Delve |
+| | **Rust** | Cargo 运行 / 构建 / 测试 / 示例、多 `toolchain` 与 `profile` 切换 | CodeLLDB |
+| | **C / C++** | 单/多源文件编译（GCC/Clang/MSVC）、标准与链接参数、Make/CMake | CodeLLDB / C++ 调试扩展 |
+| | **C# / .NET** | `csproj` / `sln` / `slnx`、`dotnet run` / `build` / `test` | 官方 C# 调试支持 |
+| | **Java** | 单文件运行、Maven / Gradle 项目任务联动 | Java Debugger |
+| **嵌入式** | **PlatformIO** | 开发板数据库检索、多环境构建/上传/串口监视/调试 | PlatformIO Core / IDE |
+| | **STM32** | CubeMX / CMake 工程识别、`.ioc` 查看器、独立固件烧录与调试 | CubeCLT / CubeProgrammer / Cortex-Debug |
 
-## 自动保存、草稿与冲突
+---
 
-文本输入停止约 **700ms** 后保存，下拉 / 勾选立即排队，失焦与切换页面时尝试提交。每个工作区一个串行写入器，保存期间的新编辑被合并到下一笔，不替换新草稿或错误写入另一个配置。
+## 快速开始
 
-状态包含已保存、等待保存、正在保存、输入无效、磁盘冲突与保存失败。无效输入旁显示错误，保留编辑内容；失败可重试。外部文件修订冲突会阻止后续写入，可查看差异、明确确认后重新加载，或保留草稿；没有静默覆盖入口。浏览器原生文本撤销仍可使用。
+### 环境要求
+- **Visual Studio Code**：`1.85.0` 或更高版本
+- **源码构建要求**：Node.js `22+` 与 `npm`
 
-关闭页面前尽量提交有效的待保存配置。未完成草稿经 VS Code SecretStorage 本地加密保存，可在下次打开时恢复；不会把可能包含误输入凭据的草稿降级保存成明文。如果系统钥匙串不可用，会明确提示：有效配置仍正常自动保存，未完成草稿只能留在当前页面内存。原生测试应用的独立身份遇到此限制，不能据此宣称该环境的加密草稿恢复已实际通过。
+### 安装方式
+1. 从 Release 页面下载最新的 `sakura-atelier-0.1.0.vsix`（或通过源码自行打包）。
+2. 打开 VS Code，进入 **扩展视图（Extensions） → 右上角 `...` 菜单 → Install from VSIX...** 选择安装包。
+3. 安装完成后执行 **Reload Window**。
 
-删除配置、移除 SDK 记录及个人 / 项目保存位置迁移，均有原生确认。移除 SDK 记录只删除本机记录，不删除真实 SDK 文件。SDK 安装 / 更新仍有独立确认，不因自动保存而执行。
+### 常用命令
+打开任意受支持的代码文件后，可直接使用编辑器右上角工具栏图标，或通过命令面板（`Ctrl+Shift+P` / `Cmd+Shift+P`）调用：
 
-## 个人与项目配置
+| 命令 ID | 说明 |
+| :--- | :--- |
+| `sakuraAtelier.run` | 使用当前选定的配置运行项目或文件 |
+| `sakuraAtelier.debug` | 使用当前配置启动调试会话 |
+| `sakuraAtelier.selectConfiguration` | 快速切换运行配置（Auto / 文件 / 项目 / 测试 / 已有任务） |
+| `sakuraAtelier.editConfigurations` | 打开可视化设置中心与配置管理 |
+| `sakuraAtelier.addConfiguration` | 从 25 套内置模板中新增运行配置 |
+| `sakuraAtelier.sdkManager` | 打开 SDK 安装、版本查询与包管理器集成视图 |
+| `sakuraAtelier.manageToolchains` | 扫描或手动绑定本地语言工具链与嵌入式工具路径 |
+| `sakuraAtelier.pythonTerminal` | 创建并自动激活所选 Python 虚拟环境的新终端 |
+| `sakuraAtelier.stop` | 仅停止由 Sakura Atelier 启动的运行或调试进程 |
 
-所有配置共用同一个列表、运行入口与调试入口，来源通过锁或团队 Codicon 和悬停文字区分：
+---
 
-- **个人配置（默认）**：保存到扩展的本地 WorkspaceState，按工作区文件夹隔离，不创建 `.vscode` 配置文件，不进入 Git，不配置同步上传。
-- **项目配置**：保存到所属工作区文件夹的 `.vscode/sakura-atelier.json`，可提交 Git；编辑区域显示所属项目文件夹和路径，并可只读打开已有文件。要在另一工作区创建配置，在模板选择器或“当前工作区”中选择它。
+## 配置与安全机制
 
-旧 `.vscode/sakura-atelier.json` 格式继续读取；旧 `sakura-runner.json` 也保留兼容入口。现有项目配置不自动迁移。来源标记与个人配置不会塞入项目 JSON 或 launch.json。个人与项目 ID 冲突会明确报错。
-
-迁移在原生确认后进行；保存前校验并检查磁盘修订，本地恢复记录确保跨存储写入被中断时仍保有配置数据。若中断后项目文件又被外部更改，会暂停恢复并提示人工检查，避免覆盖外部修改。launch.json 与 tasks.json 不被改写。
-
-项目文件示例（通常通过表单创建，以下仅供高级编辑）：
+### 配置文件示例（`.vscode/sakura-atelier.json`）
+在项目配置模式下，所有路径自动使用跨平台变量存储，本机工具链路径则通过 `${toolchain:...}` 保存在本机状态中，确保团队成员拉取代码后互不干扰：
 
 ```json
 {
@@ -105,101 +125,73 @@ Kotlin、Node Attach、Compound、独立 CMake Debug / Preset 模板暂未实现
       "cwd": "${workspaceFolder}",
       "toolchain": "${workspaceFolder}/.venv/bin/python",
       "args": ["--name", "hello world"],
-      "env": { "API_TOKEN": "${secret:API_TOKEN}" },
+      "env": {
+        "API_TOKEN": "${secret:API_TOKEN}"
+      },
       "terminal": true
     }
   ]
 }
 ```
 
-`templateId` 是可选的模板身份字段；没有它的旧配置仍使用兼容表单。其他字段使用原模型默认值。Windows 请通过选择器选择 `.venv/Scripts/python.exe`。
+### 从源码构建与测试
 
-环境变量使用 `${env:名称}` 或 `${secret:名称}` 引用；密钥由原生密码框保存到 SecretStorage，不返回 Webview。共享文件中的工作区路径转为 `${workspaceFolder}`；外部 SDK / 路径保存在本机，通过 `${toolchain:...}` / `${localPath:...}` 引用。换机器后需重新绑定。支持的其他变量包括 `${projectDir}`、`${file}`、`${fileDirname}`、`${fileBasenameNoExtension}`、`${cacheDir}`。
-
-SDK 优先级：**单个配置 > 工作区默认 > Sakura Atelier 全局默认 > 自动发现**。终端运行支持标准输入，Output 模式用于非交互执行。编译成功后才启动产物，临时产物使用缓存目录。
-
-## 简体中文与 English
-
-`sakuraAtelier.language`：`zh-cn`（默认）、`auto`（跟随 VS Code）、`en`。设置中心、模板、运行状态、错误解释、安装确认及命令菜单即时切换；用户自定义名称、源码内容、路径、语言 / 产品名称和工具原始输出不会被翻译改写。
-
-贡献点使用官方 `package.nls*.json`；运行时与 Webview 共用参数化消息资源和可靠的英文回退。中英文菜单采用上下文条件切换的兼容命令入口，保留所有原命令与 `sakuraRunner.*` 别名，不修改 keybindings.json。VS Code 设置编辑器的静态描述受官方 NLS 机制控制，随 VS Code 显示语言，不能通过扩展自己的设置动态替换；其他扩展自身 UI 遵从上述语言选项。
-
-## 语言与调试
-
-统一 RuntimeAdapter 契约覆盖项目发现、工具链发现、目标与配置建议、校验、Run/Debug 计划及终端环境；所有语言共用按钮与配置页面。
-
-| 语言/运行时 | 已实现入口 | 调试依赖/边界 |
-| --- | --- | --- |
-| Go | go.mod/go.work、run/build/test、package、构建参数、GOTOOLCHAIN、GOROOT | Go 扩展 + 已安装 Delve；不自动下载 Delve |
-| Rust | Cargo/workspace、run/build/test、package/bin/example/features/profile/target、已安装 rustup toolchain | CodeLLDB；使用 Cargo 实际产物路径 |
-| Python | 文件、module、项目入口、pytest、解释器/虚拟环境、参数与 cwd | Python Debugger；Run/Debug 使用同一解释器 |
-| JavaScript / Node.js | 文件、package scripts、npm/pnpm/yarn、ESM/CommonJS、指定 Node 可执行文件 | 内置 JavaScript Debugger；脚本复杂启动使用已有 launch 配置 |
-| TypeScript | 项目 scripts、本地 tsx/ts-node、tsc 构建后运行 | source maps；tsx/ts-node 路径依赖已安装项目工具，不使用 npx 自动下载 |
-| C | 单/多源文件、GCC/Clang/MSVC 参数、C 标准、include/link/output、Make/CMake 入口 | CodeLLDB / C++ 调试扩展；Windows 依赖原生工具链环境 |
-| C++ | 独立 C++ 编译器/标准、源文件与链接设置、Make/CMake target | 同上；复杂项目字段交给原生构建文件/tasks |
-| C# | csproj/sln/slnx、dotnet run/build/test、framework/profile/launchSettings | 已有 launch 配置 + 官方 C# 调试支持；同安装内 SDK 版本由 global.json 控制 |
-| Java（保留） | JDK 单文件、Maven/Gradle 项目已有运行任务 | 已有 launch 配置 + Java Debugger |
-
-选择已有 launch 配置时保留原生字段；preLaunchTask 成功后才启动 Debug。缺少语言调试扩展不降级成 Run。Sakura Atelier 不实现 DAP，断点/单步/变量/调用栈由对应调试器提供。Stop 根据会话标记与父子关系识别本扩展会话，不停止用户另外启动的调试会话。
-
-## Python 环境与终端
-
-优先查询微软 Python Environments 与 Python 扩展的公开 API，显示解释器、版本、管理器与所属项目；无可用 API 时可发现工作区 `.venv`/`venv`、PATH 或手动路径。支持从官方发现结果选择 Conda、uv、pyenv、Poetry 等环境，但不声称已逐个验证。
-
-显式选择解释器时尝试同步官方项目环境；失败会显示两者不一致，运行不会悄悄换成其他 Python。普通新终端由官方扩展管理；不接管已有终端。
-
-`sakuraAtelier.python.autoActivateTerminal` 控制自己创建的新终端。兼容 `python-envs.terminal.autoActivationType`（command/shellStartup/off）与旧 `python.terminal.activateEnvironment`；不改写这些设置。可用时由官方 API 创建/激活终端，不重复激活。缺少官方集成时仅对具有真实激活脚本的 venv 做 shell 适配，不只设置 VIRTUAL_ENV；复杂 Conda 激活要求官方环境支持。支持 bash/zsh/fish/PowerShell/cmd 的参数处理，Windows shell 的危险路径会明确拒绝并提供替代入口。
-
-## SDK Manager
-
-左侧“SDK 安装与更新”包含已安装、可安装和更新三个子视图，可搜索、刷新、查看真实版本 / 来源 / 安装路径；本机自定义 SDK 记录在“开发环境”中定位和管理。
-
-- macOS：检测 Homebrew，分别查询 formula/cask，结构化解析包信息。
-- Ubuntu/Debian 及明确兼容发行版：先解析 os-release，再使用当前 APT 源查询候选版本/来源。不会添加源。
-- Windows：WinGet 精确 Package ID、source 与 version；多个来源可分别选择。
-- 缺包管理器：显示状态及官方安装说明，不自动安装。其他 Linux 发行版不调用 APT。
-
-安装前重新验证真实包详情，原生确认窗口展示包、版本、来源和实际命令；用户确认后才在原生终端启动安装。APT 使用 sudo，由系统接收密码；不记录密码，不自动接受许可证或升级整个系统。Homebrew formula 使用 skip-link，禁止自动清理/依赖检查，不为切换项目 SDK 执行 link/alternatives 或修改全局 PATH。安装成功后重新发现工具链，是否切换由用户决定。
-
-系统 SDK、rustup 等工具链管理器、TypeScript/tsx 等项目开发依赖分别展示。项目依赖不强制全局安装，Python venv 由 Python 环境入口创建。SDK Manager 不安装 rustup 的新渠道，不提供任意历史版本；可选版本来自当前管理器真实查询结果。
-
-**本次仅实际验证 Homebrew 的只读搜索/详情/已安装状态；没有执行真实 SDK 安装。APT/WinGet 在当前 macOS 上仅做解析、命令和错误流程测试。**
-
-## 开发、验证与限制
-
-```sh
+```bash
+# 安装依赖
 npm ci
+
+# 编译与代码检查
 npm run compile
+npm run lint
+
+# 运行单元测试、集成测试与界面回归测试
 npm test
 npm run test:integration
 npm run test:ui
+
+# 打包生成 VSIX 安装包
 npm run package
 ```
 
-集成测试使用独立的临时工作区、用户与扩展目录，不修改现有项目设置。详细结果、复现命令、分阶段状态和手动验收见 随包附带的 TESTING.md。
+---
 
-已在 macOS ARM64 实际验证 JavaScript、TypeScript、Python、Rust、C、C++ 调试，以及 Python/Go/Rust/JS 原有运行。Go 实际 Delve、CMake 全流程、C# SDK/Debug、不同 Node 版本及 Linux/Windows 仍未验证。缺依赖不会标记为成功。完整调试配置生成、复杂 background task/compound 调试配置、多种版本管理器的全部版本枚举仍有边界；可复用原生 launch/tasks 或手动绑定 SDK。
-
-VSIX 仅包含运行时代码、界面资源、schema 与文档，不包含开发 node_modules、测试缓存、临时编译产物或用户设置。不自动发布 Marketplace、不自动提交或推送 Git。
-
-## 项目结构与后续扩展
+## 项目结构
 
 ```text
-src/
-  extension.ts                 命令与原有 Run 入口
-  controller.ts                共用选择、执行与状态
-  configuration.ts / configurationStore.ts
-  templates.ts / templateCatalog.ts
-  localization.ts / i18n.ts / ui.ts
-  adapters.ts / projects.ts / toolchains.ts
-  debugService.ts / launchConfigurations.ts
-  pythonEnvironments.ts / activation.ts
-  sdkManager.ts / packageManagers.ts
-  executor.ts / capturedExecutor.ts / cargoBuild.ts
-media/                         设置中心、模板选择器、自动保存状态机与插件图标
-configuration.schema.json      项目配置校验
-scripts/                       构建和隔离 Host 启动器
-test/                          单元、集成与界面检查入口
+Sakura-Atelier/
+├── src/
+│   ├── extension.ts                 # 扩展生命周期与命令注册入口
+│   ├── controller.ts                # 核心调度控制器与状态管理
+│   ├── adapters.ts / projects.ts    # 多语言与嵌入式项目识别及 RuntimeAdapter 实现
+│   ├── toolchains.ts / sdkManager.ts# 工具链自动探测与包管理器（Brew/APT/WinGet）集成
+│   ├── configuration*.ts            # 双存储配置引擎、Schema 校验与冲突保护
+│   ├── templates.ts                 # 25 套配置模板与项目创建脚手架
+│   ├── debugService.ts              # 外部调试扩展桥接与会话所有权追踪
+│   ├── pythonEnvironments.ts        # Python 环境接口集成与终端激活脚本生成
+│   └── localization.ts / i18n.ts    # 简体中文 / English 双语资源管理
+├── media/                           # 设置中心 Webview 界面、状态机与图标资源
+├── docs/                            # 详细设计文档、新建项目与嵌入式使用说明
+├── scripts/                         # 构建脚本与隔离 Extension Host 测试启动器
+├── test/                            # 单元测试、集成测试与 Playwright UI 测试
+└── configuration.schema.json        # .vscode/sakura-atelier.json 智能提示校验架构
 ```
 
-后续 Test 扩展可在现有 operation=test 和 RuntimeAdapter 计划之上接 VS Code Testing API；调试继续复用语言扩展，并优先补齐 Go/.NET/CMake 的真实平台测试，再增加动态配置来源和复杂 launch compound 支持。不要增加独立的语言按钮或自行实现调试适配器。
+---
+
+## 当前状态与验证范围
+
+本项目目前处于持续开发阶段（`v0.1.0`），核心集成测试与 UI 回归主要在 **macOS ARM64 (Apple Silicon)** 环境下完成：
+
+- **已真实验证**：macOS ARM64 下的编译打包、可视化设置中心、项目创建向导（全语言工程生成）、多语言运行与 Node.js / TypeScript / Python 断点调试、虚拟环境自动创建与激活、Homebrew 只读包查询以及 `.ioc` 只读编辑器。
+- **实现完成待实机深化测试**：
+  - 嵌入式硬件端到端真机烧录（ST-LINK / `STM32_Programmer_CLI`）、Cortex-Debug 实机单步调试及 PlatformIO 真机连接上传（目前已完成参数构建与模拟执行验证）。
+  - Go（Delve）、CMake 完整调试流与 C#（.NET SDK）在不同环境下的实机调试。
+  - **Windows** 与 **Linux** 平台的原生端到端兼容性验收（已内置跨平台路径与 APT / WinGet 逻辑，欢迎社区提交测试反馈与 Issue）。
+
+---
+
+<div align="center">
+
+Made with 🌸 by [ExMikuPro](https://github.com/ExMikuPro)
+
+</div>
