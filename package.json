@@ -1,0 +1,385 @@
+{
+  "name": "sakura-atelier",
+  "displayName": "Sakura Atelier",
+  "description": "Unified project Run, Debug, configuration editor and cross-platform SDK Manager.",
+  "version": "0.1.0",
+  "publisher": "ExMikuPro",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18.15.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./out/src/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Running code requires a trusted workspace.",
+      "restrictedConfigurations": [
+        "sakuraRunner.configurations",
+        "sakuraRunner.pythonPath",
+        "sakuraRunner.script",
+        "sakuraRunner.projectTask",
+        "sakuraRunner.cCompiler",
+        "sakuraRunner.cppCompiler",
+        "sakuraRunner.javaPath"
+      ]
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "sakuraAtelier.run",
+        "title": "Run with Sakura Atelier",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraAtelier.debug",
+        "title": "Debug with Sakura Atelier",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "sakuraAtelier.selectConfiguration",
+        "title": "Sakura Atelier: Select Configuration",
+        "icon": "$(chevron-down)"
+      },
+      {
+        "command": "sakuraAtelier.stop",
+        "title": "Sakura Atelier: Stop",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "sakuraAtelier.runFile",
+        "title": "Sakura Atelier: Run File",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraAtelier.runProject",
+        "title": "Sakura Atelier: Run Project",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraAtelier.configure",
+        "title": "Sakura Atelier: Open Configuration Manager",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "sakuraAtelier.editConfigurations",
+        "title": "Sakura Atelier: Edit Configurations...",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "sakuraAtelier.addConfiguration",
+        "title": "Sakura Atelier: Add Configuration...",
+        "icon": "$(add)"
+      },
+      {
+        "command": "sakuraAtelier.manageToolchains",
+        "title": "Sakura Atelier: Manage Toolchains...",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "sakuraAtelier.sdkManager",
+        "title": "Sakura Atelier: SDK Manager",
+        "icon": "$(package)"
+      },
+      {
+        "command": "sakuraAtelier.pythonTerminal",
+        "title": "Sakura Atelier: Open Python Environment Terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "sakuraRunner.run",
+        "title": "Run with Sakura Atelier (Legacy Alias)",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraRunner.debug",
+        "title": "Debug with Sakura Atelier (Legacy Alias)",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "sakuraRunner.selectConfiguration",
+        "title": "Sakura Atelier: Select Configuration (Legacy Alias)",
+        "icon": "$(chevron-down)"
+      },
+      {
+        "command": "sakuraRunner.stop",
+        "title": "Sakura Atelier: Stop (Legacy Alias)",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "sakuraRunner.runFile",
+        "title": "Sakura Atelier: Run File (Legacy Alias)",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraRunner.runProject",
+        "title": "Sakura Atelier: Run Project (Legacy Alias)",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraRunner.configure",
+        "title": "Sakura Atelier: Open Configuration Manager (Legacy Alias)",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "sakuraRunner.editConfigurations",
+        "title": "Sakura Atelier: Edit Configurations... (Legacy Alias)",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "sakuraRunner.addConfiguration",
+        "title": "Sakura Atelier: Add Configuration... (Legacy Alias)",
+        "icon": "$(add)"
+      },
+      {
+        "command": "sakuraRunner.manageToolchains",
+        "title": "Sakura Atelier: Manage Toolchains... (Legacy Alias)",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "sakuraRunner.sdkManager",
+        "title": "Sakura Atelier: SDK Manager (Legacy Alias)",
+        "icon": "$(package)"
+      },
+      {
+        "command": "sakuraRunner.pythonTerminal",
+        "title": "Sakura Atelier: Open Python Environment Terminal (Legacy Alias)",
+        "icon": "$(terminal)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "sakuraAtelier.run",
+          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sakuraAtelier.debug",
+          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sakuraAtelier.selectConfiguration",
+          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sakuraAtelier.stop",
+          "when": "resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)",
+          "group": "navigation@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "sakuraRunner.run",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.debug",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.selectConfiguration",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.stop",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.runFile",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.runProject",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.configure",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.editConfigurations",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.addConfiguration",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.manageToolchains",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.sdkManager",
+          "when": "false"
+        },
+        {
+          "command": "sakuraRunner.pythonTerminal",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Sakura Atelier",
+      "properties": {
+        "sakuraRunner.defaultMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "file",
+            "project"
+          ],
+          "enumDescriptions": [
+            "Prefer a project; fall back only when none is detected.",
+            "Always run the active file.",
+            "Require a project."
+          ],
+          "default": "auto",
+          "description": "Default run mode."
+        },
+        "sakuraRunner.script": {
+          "type": "string",
+          "default": "",
+          "description": "Preferred package.json script. Empty offers start, dev and run scripts."
+        },
+        "sakuraRunner.projectTask": {
+          "type": "string",
+          "default": "",
+          "description": "Existing VS Code task label to run for this project (for example CMake or Java)."
+        },
+        "sakuraRunner.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Python interpreter executable. Empty uses the Python extension, project venv, then PATH."
+        },
+        "sakuraRunner.cCompiler": {
+          "type": "string",
+          "default": "",
+          "description": "C compiler executable; defaults to gcc or clang."
+        },
+        "sakuraRunner.cppCompiler": {
+          "type": "string",
+          "default": "",
+          "description": "C++ compiler executable; defaults to g++ or clang++."
+        },
+        "sakuraRunner.configurations": {
+          "type": "array",
+          "default": [],
+          "description": "Explicit project commands. Executables and arguments are separate; no shell expansion. Variables: ${file}, ${projectDir}, ${workspaceFolder}. Relative executables containing a slash resolve from the project directory. For Windows .cmd wrappers use an existing VS Code task.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "language",
+              "command"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "language": {
+                "type": "string",
+                "enum": [
+                  "go",
+                  "python",
+                  "rust",
+                  "c",
+                  "cpp",
+                  "csharp",
+                  "java",
+                  "javascript",
+                  "javascriptreact",
+                  "typescript",
+                  "typescriptreact"
+                ]
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              }
+            }
+          }
+        },
+        "sakuraRunner.javaPath": {
+          "type": "string",
+          "default": "",
+          "description": "Java executable. Empty uses JAVA_HOME/bin/java, then PATH. Requires JDK 11+ for source files."
+        },
+        "sakuraRunner.python.autoActivateTerminal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Activate newly created Sakura Atelier Python terminals through the official Python environment manager when available. Does not change official settings or existing terminals."
+        },
+        "sakuraAtelier.python.autoActivateTerminal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Activate newly created Sakura Atelier Python terminals through the official Python environment manager when available. Does not change official settings or existing terminals."
+        }
+      }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "/.vscode/sakura-atelier.json"
+        ],
+        "url": "./configuration.schema.json"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "sakuraRunner",
+        "required": [
+          "sakuraId"
+        ],
+        "properties": {
+          "sakuraId": {
+            "type": "string",
+            "description": "Unique identity for a concrete Sakura Atelier task execution."
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p . && node scripts/bundle.cjs",
+    "lint": "eslint src test scripts",
+    "test": "npm run compile && npm run lint && node --test out/test/unit.test.js out/test/configuration.test.js",
+    "test:integration": "npm run compile && node scripts/integration.cjs",
+    "package": "npm run compile && vsce package --no-dependencies --allow-missing-repository --out sakura-atelier-0.1.0.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/vscode": "1.85.0",
+    "@vscode/codicons": "^0.0.46-24",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.0.0",
+    "jsonc-parser": "^3.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ]
+}

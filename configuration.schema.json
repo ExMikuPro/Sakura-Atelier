@@ -1,0 +1,210 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sakura Atelier Run / Debug Configurations",
+  "type": "object",
+  "required": [
+    "version",
+    "configurations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "default": {
+      "type": "string"
+    },
+    "configurations": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "language"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "cwd": {
+            "type": "string"
+          },
+          "toolchain": {
+            "type": "string"
+          },
+          "preLaunchTask": {
+            "type": "string"
+          },
+          "standard": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "package": {
+            "type": "string"
+          },
+          "binary": {
+            "type": "string"
+          },
+          "example": {
+            "type": "string"
+          },
+          "rustToolchain": {
+            "type": "string"
+          },
+          "cargoTarget": {
+            "type": "string"
+          },
+          "script": {
+            "type": "string"
+          },
+          "framework": {
+            "type": "string"
+          },
+          "launchProfile": {
+            "type": "string"
+          },
+          "goToolchain": {
+            "type": "string"
+          },
+          "debugName": {
+            "type": "string"
+          },
+          "debugType": {
+            "type": "string"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "buildArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "includePaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "libraryPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "linkArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "classPath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modulePath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "language": {
+            "enum": [
+              "go",
+              "rust",
+              "python",
+              "typescript",
+              "typescriptreact",
+              "javascript",
+              "javascriptreact",
+              "node",
+              "c",
+              "cpp",
+              "csharp",
+              "java"
+            ]
+          },
+          "kind": {
+            "enum": [
+              "file",
+              "project",
+              "module",
+              "executable",
+              "task",
+              "launch"
+            ]
+          },
+          "operation": {
+            "enum": [
+              "run",
+              "build",
+              "test"
+            ]
+          },
+          "profile": {
+            "enum": [
+              "debug",
+              "release"
+            ]
+          },
+          "packageManager": {
+            "enum": [
+              "npm",
+              "pnpm",
+              "yarn"
+            ]
+          },
+          "typescriptRunner": {
+            "enum": [
+              "tsx",
+              "ts-node",
+              "tsc"
+            ]
+          },
+          "terminal": {
+            "type": "boolean"
+          },
+          "autoActivate": {
+            "type": "boolean"
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^\\$\\{(env|secret):[a-zA-Z_][a-zA-Z0-9_.-]*\\}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}
