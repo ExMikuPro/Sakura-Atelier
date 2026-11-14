@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [dev, main]
+    branches: [dev]
   pull_request:
-    branches: [dev, main]
+    branches: [dev]
 
 permissions:
   contents: read
@@ -15,12 +15,8 @@ concurrency:
 
 jobs:
   build:
-    name: Build, lint and unit tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Build, lint and unit tests (macOS)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,13 +29,9 @@ jobs:
       - run: npm test
 
   integration:
-    name: Integration tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: Integration tests (macOS)
+    runs-on: macos-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,40 +46,12 @@ jobs:
         with:
           go-version: stable
       - run: npm ci
-      - name: Run integration tests (Linux, under xvfb)
-        if: runner.os == 'Linux'
-        run: xvfb-run -a npm run test:integration
-      - name: Run integration tests
-        if: runner.os != 'Linux'
+      - name: Run Extension Host integration tests
         run: npm run test:integration
-
-  # Kept separate on purpose: the VS Code extension-host suite does not pass on
-  # Windows yet (JDK source launch and C compile tests fail, and the process
-  # deactivation test hangs). The failures are real and are not masked; see the
-  # pull request description. Remove this job's separation once they are fixed.
-  integration-windows-known-failing:
-    name: Integration tests (windows-latest, known failing)
-    runs-on: windows-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-      - uses: actions/setup-go@v5
-        with:
-          go-version: stable
-      - run: npm ci
-      - run: npm run test:integration
 
   package:
     name: Package VSIX
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

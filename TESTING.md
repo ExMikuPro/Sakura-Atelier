@@ -72,3 +72,9 @@ Java 路径只是本机测试时显式提供的 SDK，不是扩展的默认路�
 ## 打包检查
 
 `npm run package` 生成 `sakura-atelier-0.1.0.vsix`。清单只允许 package.json、运行时 out/src/*.js、schema、界面 JS/CSS/Codicon 字体及许可、公开文档。开发依赖、测试、缓存、用户配置和临时产物均排除。安装兼容性检查使用隔离的 VS Code 1.85.2 用户/扩展目录，不发布 Marketplace。
+
+## 本轮 macOS 优先 CI
+
+自动 CI 仅在 `macos-latest` 上运行编译、ESLint、全部单元测试、Extension Host 集成测试和 VSIX 打包；不自动发布。纯 Windows/Linux 路径与平台规则单元测试继续保留。主要验收平台为 Apple Silicon；macOS x86_64 需另行实测。
+
+Windows 与 Linux 原生支持验证暂缓，现有跨平台实现保留。Windows Extension Host 已知存在 JDK source launcher、C 编译失败及进程卸载测试挂起的问题，尚未修复或验证通过。取消自动原生任务不代表这些问题已解决。WSL、SSH 与 Dev Containers 保留架构，尚未实机验收。
