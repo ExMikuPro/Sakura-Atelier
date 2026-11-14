@@ -66,8 +66,8 @@ pre.preview { margin: 0; white-space: pre-wrap; word-break: break-all; font-fami
 
 export const wizardScript = `
 const vscode = acquireVsCodeApi();
-let view; let timer;
-const send = m => vscode.postMessage(m);
+let view; let timer; let clientRevision = 0;
+const send = m => vscode.postMessage({ ...m, clientRevision: ++clientRevision });
 function el(tag, props, ...kids) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(props || {})) { if (k === 'class') n.className = v; else if (k.startsWith('aria-')) n.setAttribute(k, String(v)); else if (k === 'on') for (const [e, f] of Object.entries(v)) n.addEventListener(e, f); else if (v !== undefined && v !== false) n.setAttribute(k, v === true ? '' : String(v)); }
@@ -128,11 +128,11 @@ function renderDetail() {
   }
   if (view.generator.length) d.append(el('div', { class: 'field' }, el('label', { for: 'generator' }, L('Toolchain in STM32CubeMX')), el('select', { id: 'generator', on: { change: e => send({ type: 'option', key: 'generator', value: e.target.value }) } }, view.generator.map(g => el('option', { value: g, selected: g === (view.options.generator || 'cmake') }, g === 'cmake' ? 'CMake' : g === 'makefile' ? 'Makefile' : 'STM32CubeIDE')))));
   if (view.needsFramework) {
-    d.append(el('div', { class: 'field' }, el('label', { for: 'speed' }, L('Monitor speed')), el('input', { id: 'speed', type: 'text', inputmode: 'numeric', value: view.options.monitorSpeed || '', placeholder: '115200', on: { change: e => send({ type: 'option', key: 'monitorSpeed', value: e.target.value }) } })));
+    d.append(el('div', { class: 'field' }, el('label', { for: 'speed' }, L('Monitor speed')), el('input', { id: 'speed', type: 'text', inputmode: 'numeric', value: view.options.monitorSpeed || '', placeholder: '115200', on: { input: e => send({ type: 'option', key: 'monitorSpeed', value: e.target.value }) } })));
     d.append(el('div', { class: 'field inline' }, el('input', { id: 'sample', type: 'checkbox', checked: !!view.options.sampleCode, on: { change: e => send({ type: 'option', key: 'sampleCode', value: e.target.checked }) } }), el('label', { for: 'sample' }, L('Include sample code'))));
   }
   d.append(el('div', { class: 'card' }, el('div', { class: 'sub' }, L('SDK and toolchain')), view.tools.map(t => el('div', {}, icon(t.found ? 'pass' : 'warning'), ' ' + t.label + ' ', el('span', { class: t.found ? 'ok' : 'warn' }, t.found ? L('Found') : L('Not found')), t.path ? el('div', { class: 'sub' }, t.path) : null, t.found ? null : el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'locateTools' }) } }, L('Locate...'))))));
-  d.append(el('div', { class: 'field' }, el('label', { for: 'name' }, L('Project name')), el('input', { id: 'name', type: 'text', value: view.name, on: { change: e => send({ type: 'name', value: e.target.value }) } })));
+  d.append(el('div', { class: 'field' }, el('label', { for: 'name' }, L('Project name')), el('input', { id: 'name', type: 'text', value: view.name, on: { input: e => send({ type: 'name', value: e.target.value }) } })));
   d.append(el('div', { class: 'field' }, el('label', { for: 'dir' }, L('Save location')), el('div', { class: 'inline' }, el('input', { id: 'dir', type: 'text', value: view.parentDir, readonly: true }), el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'browse' }) } }, L('Browse...')))));
   for (const b of view.blockers) d.append(el('div', { class: 'err' }, icon('error'), ' ' + b));
   for (const w of view.warnings) d.append(el('div', { class: 'warn' }, icon('warning'), ' ' + w));
@@ -143,6 +143,12 @@ function renderDetail() {
     el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'cancel' }) } }, L('Cancel'))));
 }
 function render() { document.title = L('New embedded project'); renderNav(); renderList(); renderDetail(); }
-window.addEventListener('message', e => { if (e.data && e.data.type === 'view') { const focus = document.activeElement && document.activeElement.id; view = e.data.view; render(); if (focus) { const n = document.getElementById(focus); if (n && n.id !== 'search') n.focus(); } } });
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'view' || e.data.clientRevision < clientRevision) return;
+  const active = document.activeElement; const focus = active && active.id;
+  const start = active && active.selectionStart; const end = active && active.selectionEnd;
+  view = e.data.view; render();
+  if (focus) { const n = document.getElementById(focus); if (n && n.id !== 'search') { n.focus(); if (typeof start === 'number' && typeof n.setSelectionRange === 'function') n.setSelectionRange(start, end); } }
+});
 send({ type: 'ready' });
 `;
