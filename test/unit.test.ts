@@ -19,8 +19,8 @@ test('manifest registers real commands and native language-gated editor button',
   const button = manifest.contributes.menus['editor/title'][0];
   assert.equal(button.group, 'navigation@1'); assert.equal(button.command, 'sakuraAtelier.run');
   assert.equal(manifest.contributes.commands[0].icon, '$(play)');
-  assert.equal(manifest.contributes.commands[0].title, 'Run with Sakura Atelier');
-  const expression = new RegExp(button.when.match(/=~ \/(.+)\/$/)[1]);
+  const nls=JSON.parse(await fs.readFile(path.resolve(__dirname,'../../package.nls.json'),'utf8'));assert.equal(nls[manifest.contributes.commands[0].title.slice(1,-1)],'使用 Sakura Atelier 运行');
+  const expression = new RegExp(button.when.match(/=~ \/([^/]+)\//)[1]);
   for (const language of languages) { assert.ok(supports(language)); assert.ok(expression.test(language)); }
   for (const language of ['markdown', 'json', 'plaintext', 'html', 'shellscript']) { assert.equal(supports(language), false); assert.equal(expression.test(language), false); }
 });
@@ -102,9 +102,9 @@ test('untrusted workspace rejects Run before planning or execution', async () =>
   const commands = new Map<string, () => Promise<void>>();
   let warnings = 0; let runs = 0;
   class FakeExecutor { dispose() {} stop() {} async exclusive() { runs++; } }
-  const fakeVSCode = { extensions: {getExtension:()=>undefined}, workspace: { isTrusted: false }, window: { showWarningMessage: async () => { warnings++; } }, commands: { registerCommand: (name: string, command: () => Promise<void>) => { commands.set(name, command); return { dispose() {} }; } } };
+  const fakeVSCode = { extensions: {getExtension:()=>undefined}, workspace: { isTrusted: false,onDidChangeConfiguration:()=>({dispose(){}}) }, window: { showWarningMessage: async () => { warnings++; } }, commands: {executeCommand:async()=>{}, registerCommand: (name: string, command: () => Promise<void>) => { commands.set(name, command); return { dispose() {} }; } } };
   const exports: { activate?: (context: { subscriptions: unknown[] }) => void } = {};
-  runInNewContext(source, { exports, require: (name: string) => name === 'vscode' ? fakeVSCode : name === './controller' ? { AtelierController: class { dispose() {} } } : name === './executor' ? { TaskExecutor: FakeExecutor } : name === './model' ? { supports, RunnerError: Error } : {}, console });
+  runInNewContext(source, { exports, require: (name: string) => name === 'vscode' ? fakeVSCode : name === './i18n'?{language:()=> 'zh-cn'}:name==='./ui'?{ui:fakeVSCode.window}:name === './controller' ? { AtelierController: class { dispose() {} updateStatus(){} } } : name === './executor' ? { TaskExecutor: FakeExecutor } : name === './model' ? { supports, RunnerError: Error } : {}, console });
   exports.activate!({ subscriptions: [] });
   for (const command of ['sakuraRunner.run', 'sakuraRunner.runFile', 'sakuraRunner.runProject']) { await commands.get(command)!(); }
   assert.equal(warnings, 3); assert.equal(runs, 0);
