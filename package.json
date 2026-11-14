@@ -49,6 +49,38 @@
         "title": "%command.sakuraAtelier.embedded.manageTools%"
       },
       {
+        "command": "sakuraAtelier.embedded.platformio.selectEnvironment",
+        "title": "%command.sakuraAtelier.embedded.platformio.selectEnvironment%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.build",
+        "title": "%command.sakuraAtelier.embedded.platformio.build%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.clean",
+        "title": "%command.sakuraAtelier.embedded.platformio.clean%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.upload",
+        "title": "%command.sakuraAtelier.embedded.platformio.upload%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.debug",
+        "title": "%command.sakuraAtelier.embedded.platformio.debug%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.monitor",
+        "title": "%command.sakuraAtelier.embedded.platformio.monitor%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.test",
+        "title": "%command.sakuraAtelier.embedded.platformio.test%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.testOnDevice",
+        "title": "%command.sakuraAtelier.embedded.platformio.testOnDevice%"
+      },
+      {
         "command": "sakuraAtelier.selectConfiguration",
         "title": "%command.sakuraAtelier.selectConfiguration%",
         "icon": "$(chevron-down)"

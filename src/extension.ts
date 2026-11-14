@@ -32,11 +32,14 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand(`${namespace}.selectConfiguration`,(id?:string)=>safe(()=>controller!.selectConfiguration(id))()));
   }
   // Embedded support is loaded on first use so activation stays unchanged.
-  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.manageTools',safe(async()=>{const embedded=await import('./embedded/toolsCommand');await embedded.manageEmbeddedTools(embedded.createToolRegistry(context));})));
+  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice'] as const){
+    context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
+  }
   const updateLanguage=()=>{void vscode.commands.executeCommand('setContext','sakuraAtelier.uiEnglish',language()==='en');controller?.updateStatus();};
   updateLanguage();context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event=>{if(event.affectsConfiguration('sakuraAtelier.language'))updateLanguage();}));
   for(const name of ['run','debug','selectConfiguration','stop','runFile','runProject','configure','editConfigurations','addConfiguration','manageToolchains','sdkManager','pythonTerminal']){context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.english.${name}`,(...args:unknown[])=>vscode.commands.executeCommand(`sakuraAtelier.${name}`,...args)));}
   if(vscode.extensions.getExtension('sakura-runner-local.sakura-runner')){void ui.showInformationMessage('Sakura Atelier has a new extension ID. Disable the old Sakura Runner extension to avoid duplicate toolbar buttons.');}
+
 
 }
 async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): Promise<void> {

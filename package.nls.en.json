@@ -55,5 +55,13 @@
   "extension.description": "Unified project Run, Debug, configuration editor and cross-platform SDK Manager.",
   "trust.description": "Running code requires a trusted workspace.",
   "task.sakuraId": "Unique identity for a concrete Sakura Atelier task execution.",
-  "command.sakuraAtelier.embedded.manageTools": "Sakura Atelier: Embedded Tools..."
+  "command.sakuraAtelier.embedded.manageTools": "Sakura Atelier: Embedded Tools...",
+  "command.sakuraAtelier.embedded.platformio.selectEnvironment": "Sakura Atelier: PlatformIO: Select Environment...",
+  "command.sakuraAtelier.embedded.platformio.build": "Sakura Atelier: PlatformIO: Build",
+  "command.sakuraAtelier.embedded.platformio.clean": "Sakura Atelier: PlatformIO: Clean",
+  "command.sakuraAtelier.embedded.platformio.upload": "Sakura Atelier: PlatformIO: Upload (writes firmware to the board)",
+  "command.sakuraAtelier.embedded.platformio.debug": "Sakura Atelier: PlatformIO: Debug",
+  "command.sakuraAtelier.embedded.platformio.monitor": "Sakura Atelier: PlatformIO: Serial Monitor",
+  "command.sakuraAtelier.embedded.platformio.test": "Sakura Atelier: PlatformIO: Test (build only on boards)",
+  "command.sakuraAtelier.embedded.platformio.testOnDevice": "Sakura Atelier: PlatformIO: Test on Device (writes firmware to the board)"
 }
