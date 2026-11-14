@@ -1,3 +1,5 @@
+import { t } from './i18n';
+import { ui } from './ui';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import { PackageManagerAdapter,PackageSummary,PackageDetails,platformManager,HomebrewAdapter,AptAdapter,WingetAdapter } from './packageManagers';
@@ -33,7 +35,8 @@ export class SdkManager implements vscode.Disposable{
     if(current.id!==previous.id||current.source!==previous.source||current.kind!==previous.kind){throw new RunnerError('Package identity/source changed. Refresh and confirm the new source first.');}
     const {step,admin}=await adapter.installPlan(current,version,cwd);
     const command=[step.command,...step.args].map(arg=>JSON.stringify(arg)).join(' ');
-    const accepted=await vscode.window.showWarningMessage(`Install ${current.name} ${version}\nSource: ${current.source}\n${command}\n${admin?'Administrator permission will be requested by sudo in the terminal. ':''}${adapter.kind==='brew'?'Homebrew formulae use --skip-link; automatic cleanup and dependent upgrades are disabled. ':''}Package-manager permission and license prompts remain interactive.`,{modal:true},'Install');
+    const message=[t('Install {0} {1}',current.name,version),t('Source: {0}',current.source),command,admin?t('Administrator permission will be requested by sudo in the terminal.'):'',adapter.kind==='brew'?t('Homebrew formulae use --skip-link; automatic cleanup and dependent upgrades are disabled.'):'',t('Package-manager permission and license prompts remain interactive.')].filter(Boolean).join('\n');
+    const accepted=await ui.showWarningMessage(message,{modal:true},'Install');
     if(accepted!=='Install'){return {cancelled:true};}
     const started=await this.installer.exclusive(()=>this.installer.run({name:`Install ${current.name}`,steps:[step]}));
     if(!started){throw new RunnerError('Another SDK installation is already running.');}
