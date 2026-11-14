@@ -19,8 +19,8 @@ test('manifest registers real commands and native language-gated editor button',
   const button = manifest.contributes.menus['editor/title'][0];
   assert.equal(button.group, 'navigation@1'); assert.equal(button.command, 'sakuraAtelier.run');
   assert.equal(manifest.contributes.commands[0].icon, '$(play)');
-  assert.equal(manifest.contributes.commands[0].title, 'Run with Sakura Atelier');
-  const expression = new RegExp(button.when.match(/=~ \/(.+)\/$/)[1]);
+  const nls=JSON.parse(await fs.readFile(path.resolve(__dirname,'../../package.nls.json'),'utf8'));assert.equal(nls[manifest.contributes.commands[0].title.slice(1,-1)],'使用 Sakura Atelier 运行');
+  const expression = new RegExp(button.when.match(/=~ \/([^/]+)\//)[1]);
   for (const language of languages) { assert.ok(supports(language)); assert.ok(expression.test(language)); }
   for (const language of ['markdown', 'json', 'plaintext', 'html', 'shellscript']) { assert.equal(supports(language), false); assert.equal(expression.test(language), false); }
 });
@@ -57,7 +57,7 @@ test('Go project first; Run File passes a single absolute argument with spaces',
 test('project mode reports absent project', () => fixture(async dir => { await assert.rejects(createPlans(context(dir, { mode: 'project' })), /No supported project/); }));
 test('missing SDK produces an explicit actionable error', () => fixture(async dir => { await assert.rejects(resolveTool('sakura-nonexistent-sdk', dir, { PATH: '' }), /Missing toolchain/); }));
 test('tool path with spaces stays an executable, without shell parsing', () => fixture(async dir => {
-  const tool = path.join(dir, 'tool & $'); await fs.writeFile(tool, '#!/bin/sh\nexit 0\n', { mode: 0o755 }); assert.equal(await resolveTool(tool, dir), tool);
+  const tool = path.join(dir, process.platform === 'win32' ? 'tool & $.exe' : 'tool & $'); await fs.writeFile(tool, '#!/bin/sh\nexit 0\n', { mode: 0o755 }); assert.equal(await resolveTool(tool, dir), tool);
 }));
 test('C/C++ compile into cache and never source directory', () => fixture(async dir => {
   for (const language of ['c', 'cpp'] as const) {
@@ -69,7 +69,13 @@ test('CMake and Java projects require an explicit project entry', () => fixture(
   for (const language of ['cpp', 'java'] as const) { await assert.rejects(createPlans(context(dir, { language, project: { root: dir, marker: language === 'cpp' ? 'CMakeLists.txt' : 'pom.xml' } })), /detected.*task/); }
 }));
 test('Java single file uses source launcher; C# does not invent a project', () => fixture(async dir => {
-  const java = (await createPlans(context(dir, { language: 'java', mode: 'file', file: path.join(dir, 'Main.java') })))[0]; assert.equal(java.steps[0].command, 'java'); assert.deepEqual(java.steps[0].args, [path.join(dir, 'Main.java')]);
+  // JAVA_HOME is honoured by the planner, so isolate the PATH-default case from the host environment.
+  const savedJavaHome = process.env.JAVA_HOME; delete process.env.JAVA_HOME;
+  try {
+    const java = (await createPlans(context(dir, { language: 'java', mode: 'file', file: path.join(dir, 'Main.java') })))[0]; assert.equal(java.steps[0].command, 'java'); assert.deepEqual(java.steps[0].args, [path.join(dir, 'Main.java')]);
+    process.env.JAVA_HOME = path.join(dir, 'jdk');
+    const home = (await createPlans(context(dir, { language: 'java', mode: 'file', file: path.join(dir, 'Main.java') })))[0]; assert.equal(home.steps[0].command, path.join(dir, 'jdk', 'bin', process.platform === 'win32' ? 'java.exe' : 'java'));
+  } finally { if (savedJavaHome === undefined) { delete process.env.JAVA_HOME; } else { process.env.JAVA_HOME = savedJavaHome; } }
   await assert.rejects(createPlans(context(dir, { language: 'csharp' })), /requires a .csproj/);
 }));
 test('C# and Cargo offer multiple targets', () => fixture(async dir => {
@@ -102,9 +108,9 @@ test('untrusted workspace rejects Run before planning or execution', async () =>
   const commands = new Map<string, () => Promise<void>>();
   let warnings = 0; let runs = 0;
   class FakeExecutor { dispose() {} stop() {} async exclusive() { runs++; } }
-  const fakeVSCode = { extensions: {getExtension:()=>undefined}, workspace: { isTrusted: false }, window: { showWarningMessage: async () => { warnings++; } }, commands: { registerCommand: (name: string, command: () => Promise<void>) => { commands.set(name, command); return { dispose() {} }; } } };
+  const fakeVSCode = { extensions: {getExtension:()=>undefined}, workspace: { isTrusted: false,onDidChangeConfiguration:()=>({dispose(){}}) }, window: { showWarningMessage: async () => { warnings++; } }, commands: {executeCommand:async()=>{}, registerCommand: (name: string, command: () => Promise<void>) => { commands.set(name, command); return { dispose() {} }; } } };
   const exports: { activate?: (context: { subscriptions: unknown[] }) => void } = {};
-  runInNewContext(source, { exports, require: (name: string) => name === 'vscode' ? fakeVSCode : name === './controller' ? { AtelierController: class { dispose() {} } } : name === './executor' ? { TaskExecutor: FakeExecutor } : name === './model' ? { supports, RunnerError: Error } : {}, console });
+  runInNewContext(source, { exports, require: (name: string) => name === 'vscode' ? fakeVSCode : name === './i18n'?{language:()=> 'zh-cn'}:name==='./ui'?{ui:fakeVSCode.window}:name === './controller' ? { AtelierController: class { dispose() {} updateStatus(){} } } : name === './executor' ? { TaskExecutor: FakeExecutor } : name === './model' ? { supports, RunnerError: Error } : {}, console });
   exports.activate!({ subscriptions: [] });
   for (const command of ['sakuraRunner.run', 'sakuraRunner.runFile', 'sakuraRunner.runProject']) { await commands.get(command)!(); }
   assert.equal(warnings, 3); assert.equal(runs, 0);

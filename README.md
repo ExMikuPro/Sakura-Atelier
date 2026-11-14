@@ -34,15 +34,57 @@
 
 旧 `sakuraRunner.*` 命令和已有设置继续兼容。`sakuraRunner.defaultMode` 支持 auto/file/project；不会首次启动就写入 settings.json。
 
-## Run / Debug Configurations
+## 设置中心与配置模板
 
-配置下拉菜单中提供 Edit Configurations、Add Configuration、Manage Toolchains、SDK Manager 和原生调试配置入口。
+通过“选择运行配置 → 编辑配置…”打开同一个设置中心。左侧是可展开的设置树，右侧是详情；侧栏支持拖动、方向键调整宽度和窄窗口收起。没有顶部横向标签，也没有底部 Save/Apply/Cancel。
 
-编辑页使用 VS Code Webview、主题颜色与官方 Codicons：左侧按语言分类，支持新增、复制、删除、重命名；右侧根据语言显示入口、SDK、工作目录、运行/编译参数、环境引用、构建前任务、终端模式以及语言专属字段。Save 保存并关闭，Apply 保存并保留页面，Cancel 放弃未保存修改。可指定项目默认配置。
+- **运行与调试配置**：统一列表、新增模板、复制、重命名、删除及默认配置。
+- **开发环境**：总览、Go、Rust、Python、Node.js、独立 C / C++ 编译器、.NET、Java。
+- **SDK 安装与更新**：已安装、可安装、更新；软件包列表与固定详情区域分开。
 
-配置文件为 `.vscode/sakura-atelier.json`，存在旧 `.vscode/sakura-runner.json` 时可读取。不会覆盖 launch.json 或 tasks.json。每个工作区文件夹独立存储；当前项目选择记录在 WorkspaceState。文件写入有校验、并发修订检查与边界检查。
+点击“添加配置…”后，按钮旁弹出紧凑模板选择器。所有语言始终可访问，当前文件与项目清单只影响推荐顺序。支持模糊搜索、最近使用、分组折叠、方向键、Enter、Esc 和点击外部关闭；焦点会返回入口。可在选择器中切换工作区 / 检测到的项目根目录。
 
-最小示例（其他字段使用模型默认值）：
+首批 **25 个模板**直接绑定已有执行后端：
+
+| 分组 | 模板 |
+| --- | --- |
+| Go | 应用程序、构建、测试 |
+| Rust / Cargo | 运行、构建、测试、示例 |
+| Python | 脚本、模块、Pytest |
+| JavaScript / TypeScript / Node.js | Node.js 应用程序、JavaScript 文件、TypeScript 文件、npm / pnpm / yarn 脚本 |
+| C / C++ / CMake | C 源文件、C++ 源文件、CMake 应用程序 |
+| C# / .NET | 应用程序、构建、测试 |
+| Java | 应用程序、Maven / Gradle 任务 |
+| 通用 | 已有 VS Code 前台任务 |
+
+Kotlin、Node Attach、Compound、独立 CMake Debug / Preset 模板暂未实现，不显示虚假入口。CMake 应用程序仍可通过已有执行器和对应调试扩展调试，但需要项目、构建目标及实际产物路径；不猜测二进制文件位置。
+
+选择模板只生成草稿，不执行项目命令、不扫描 SDK 版本、不安装软件。新配置的有效字段随后按自动保存策略保存；未完成的模块名称、目标和 JSON 输入留在草稿中。跨语言模板不会把当前活动文件当作所有语言的入口。配置表单按模板展示字段，参数和环境变量使用逐行编辑器，编译参数、原生任务、调试覆盖及复杂 JSON 放在高级选项。
+
+配置中的 SDK 下拉可直接选择项目默认、已发现 SDK、扫描本机、选择已有路径或进入安装页。缺少 SDK 不妨碍编辑，但不会标为已就绪；“尚未检查”只表示定位到可执行文件，仍由 Run 验证版本、目标与依赖。扫描是用户显式操作，安装另外确认。不修改系统默认 SDK 或全局环境。
+
+## 自动保存、草稿与冲突
+
+文本输入停止约 **700ms** 后保存，下拉 / 勾选立即排队，失焦与切换页面时尝试提交。每个工作区一个串行写入器，保存期间的新编辑被合并到下一笔，不替换新草稿或错误写入另一个配置。
+
+状态包含已保存、等待保存、正在保存、输入无效、磁盘冲突与保存失败。无效输入旁显示错误，保留编辑内容；失败可重试。外部文件修订冲突会阻止后续写入，可查看差异、明确确认后重新加载，或保留草稿；没有静默覆盖入口。浏览器原生文本撤销仍可使用。
+
+关闭页面前尽量提交有效的待保存配置。未完成草稿经 VS Code SecretStorage 本地加密保存，可在下次打开时恢复；不会把可能包含误输入凭据的草稿降级保存成明文。如果系统钥匙串不可用，会明确提示：有效配置仍正常自动保存，未完成草稿只能留在当前页面内存。原生测试应用的独立身份遇到此限制，不能据此宣称该环境的加密草稿恢复已实际通过。
+
+删除配置、移除 SDK 记录及个人 / 项目保存位置迁移，均有原生确认。移除 SDK 记录只删除本机记录，不删除真实 SDK 文件。SDK 安装 / 更新仍有独立确认，不因自动保存而执行。
+
+## 个人与项目配置
+
+所有配置共用同一个列表、运行入口与调试入口，来源通过锁或团队 Codicon 和悬停文字区分：
+
+- **个人配置（默认）**：保存到扩展的本地 WorkspaceState，按工作区文件夹隔离，不创建 `.vscode` 配置文件，不进入 Git，不配置同步上传。
+- **项目配置**：保存到所属工作区文件夹的 `.vscode/sakura-atelier.json`，可提交 Git；编辑区域显示所属项目文件夹和路径，并可只读打开已有文件。要在另一工作区创建配置，在模板选择器或“当前工作区”中选择它。
+
+旧 `.vscode/sakura-atelier.json` 格式继续读取；旧 `sakura-runner.json` 也保留兼容入口。现有项目配置不自动迁移。来源标记与个人配置不会塞入项目 JSON 或 launch.json。个人与项目 ID 冲突会明确报错。
+
+迁移在原生确认后进行；保存前校验并检查磁盘修订，本地恢复记录确保跨存储写入被中断时仍保有配置数据。若中断后项目文件又被外部更改，会暂停恢复并提示人工检查，避免覆盖外部修改。launch.json 与 tasks.json 不被改写。
+
+项目文件示例（通常通过表单创建，以下仅供高级编辑）：
 
 ```json
 {
@@ -51,6 +93,7 @@
   "configurations": [
     {
       "id": "python-main",
+      "templateId": "python.script",
       "name": "Python — main.py",
       "language": "python",
       "kind": "file",
@@ -65,13 +108,17 @@
 }
 ```
 
-Windows 请通过选择器选择 `.venv/Scripts/python.exe`。支持 `${workspaceFolder}`、`${projectDir}`、`${file}`、`${fileDirname}`、`${fileBasenameNoExtension}`、`${cacheDir}`、`${env:NAME}` 与 `${secret:NAME}`。
+`templateId` 是可选的模板身份字段；没有它的旧配置仍使用兼容表单。其他字段使用原模型默认值。Windows 请通过选择器选择 `.venv/Scripts/python.exe`。
 
-环境变量值使用 env/secret 引用；密码在原生密码输入框录入 SecretStorage，不返回 Webview。参数使用 JSON 字符串数组，按参数边界传递。不要把凭据写进普通参数。项目内路径保存为可移植变量，机器上的外部 SDK/路径保存在本地状态，通过 `${toolchain:...}` / `${localPath:...}` 引用；换机器后需重新绑定。
+环境变量使用 `${env:名称}` 或 `${secret:名称}` 引用；密钥由原生密码框保存到 SecretStorage，不返回 Webview。共享文件中的工作区路径转为 `${workspaceFolder}`；外部 SDK / 路径保存在本机，通过 `${toolchain:...}` / `${localPath:...}` 引用。换机器后需重新绑定。支持的其他变量包括 `${projectDir}`、`${file}`、`${fileDirname}`、`${fileBasenameNoExtension}`、`${cacheDir}`。
 
-SDK 优先级：**单个配置 > 工作区默认 > Sakura Atelier 全局默认 > 自动发现**。不改变系统默认 SDK 或全局环境。选择 SDK 不等于安装后自动切换。
+SDK 优先级：**单个配置 > 工作区默认 > Sakura Atelier 全局默认 > 自动发现**。终端运行支持标准输入，Output 模式用于非交互执行。编译成功后才启动产物，临时产物使用缓存目录。
 
-`terminal: true` 使用可输入的原生任务终端；false 使用 OutputChannel（无交互 stdin）。编译步骤成功才运行产物，默认产物放缓存目录。复用终端并抑制重复触发，停用时清理拥有的执行。
+## 简体中文与 English
+
+`sakuraAtelier.language`：`zh-cn`（默认）、`auto`（跟随 VS Code）、`en`。设置中心、模板、运行状态、错误解释、安装确认及命令菜单即时切换；用户自定义名称、源码内容、路径、语言 / 产品名称和工具原始输出不会被翻译改写。
+
+贡献点使用官方 `package.nls*.json`；运行时与 Webview 共用参数化消息资源和可靠的英文回退。中英文菜单采用上下文条件切换的兼容命令入口，保留所有原命令与 `sakuraRunner.*` 别名，不修改 keybindings.json。VS Code 设置编辑器的静态描述受官方 NLS 机制控制，随 VS Code 显示语言，不能通过扩展自己的设置动态替换；其他扩展自身 UI 遵从上述语言选项。
 
 ## 语言与调试
 
@@ -101,7 +148,7 @@ SDK 优先级：**单个配置 > 工作区默认 > Sakura Atelier 全局默认 >
 
 ## SDK Manager
 
-Installed SDKs、Available SDKs、Updates、Custom SDKs 共用主题界面，可搜索、刷新、查看版本/来源/安装路径、定位现有 SDK、设工作区或全局默认。
+左侧“SDK 安装与更新”包含已安装、可安装和更新三个子视图，可搜索、刷新、查看真实版本 / 来源 / 安装路径；本机自定义 SDK 记录在“开发环境”中定位和管理。
 
 - macOS：检测 Homebrew，分别查询 formula/cask，结构化解析包信息。
 - Ubuntu/Debian 及明确兼容发行版：先解析 os-release，再使用当前 APT 源查询候选版本/来源。不会添加源。
@@ -121,6 +168,7 @@ npm ci
 npm run compile
 npm test
 npm run test:integration
+npm run test:ui
 npm run package
 ```
 
@@ -137,12 +185,14 @@ src/
   extension.ts                 命令与原有 Run 入口
   controller.ts                共用选择、执行与状态
   configuration.ts / configurationStore.ts
+  templates.ts / templateCatalog.ts
+  localization.ts / i18n.ts / ui.ts
   adapters.ts / projects.ts / toolchains.ts
   debugService.ts / launchConfigurations.ts
   pythonEnvironments.ts / activation.ts
   sdkManager.ts / packageManagers.ts
   executor.ts / capturedExecutor.ts / cargoBuild.ts
-media/                         主题化配置与 SDK 页面
+media/                         设置中心、模板选择器、自动保存状态机与插件图标
 configuration.schema.json      项目配置校验
 scripts/                       构建和隔离 Host 启动器
 test/                          单元、集成与界面检查入口
