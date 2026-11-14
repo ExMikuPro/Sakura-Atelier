@@ -15,3 +15,12 @@ export async function launchConfigurations(folder:vscode.WorkspaceFolder):Promis
   if(!Array.isArray(document.configurations)){throw new RunnerError('launch.json configurations must be an array.',true);}
   return document.configurations.filter((entry):entry is vscode.DebugConfiguration=>!!entry&&typeof entry==='object'&&typeof (entry as vscode.DebugConfiguration).name==='string'&&typeof (entry as vscode.DebugConfiguration).type==='string');
 }
+/** Local task labels only: asking for templates never invokes task providers or a build tool. */
+export async function taskLabels(folder:vscode.WorkspaceFolder):Promise<string[]> {
+  const file=path.join(folder.uri.fsPath,'.vscode/tasks.json');
+  if(!await exists(file)){return [];}
+  if(!await contained(folder.uri.fsPath,file)){throw new RunnerError('tasks.json points outside the workspace.',true);}
+  const errors:ParseError[]=[];const document=parse(await fs.readFile(file,'utf8'),errors,{allowTrailingComma:true}) as {tasks?:{label?:unknown;isBackground?:boolean}[]};
+  if(errors.length||!Array.isArray(document?.tasks)){return [];}
+  return document.tasks.filter(t=>t&&typeof t.label==='string'&&!t.isBackground).map(t=>t.label as string);
+}

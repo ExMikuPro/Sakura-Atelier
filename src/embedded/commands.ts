@@ -5,6 +5,7 @@ import { adapterRegistry } from '../adapters';
 import type { BackendHost, BackendProject } from '../adapterTypes';
 import { RunnerError } from '../model';
 import type { TaskExecutor } from '../executor';
+import type { DebugService } from '../debugService';
 import { createToolRegistry, manageEmbeddedTools } from './toolsCommand';
 import { nodeRunner } from './process';
 import type { EmbeddedPlan } from './plan';
@@ -92,7 +93,7 @@ async function pickPort(pio: string | undefined, root: string): Promise<string |
   return picked.port;
 }
 
-async function execute(plan: EmbeddedPlan, folder: vscode.WorkspaceFolder, executor: TaskExecutor): Promise<void> {
+export async function executeEmbeddedPlan(plan: EmbeddedPlan, folder: vscode.WorkspaceFolder, executor: TaskExecutor, debug: DebugService): Promise<void> {
   if (plan.blockers.length) { throw new RunnerError(plan.blockers.join(' '), true); }
   if (plan.risk === 'writes-device' && await vscode.window.showWarningMessage(plan.confirm ?? 'This writes to a device. Continue?', { modal: true }, 'Continue') !== 'Continue') { return; }
   if (plan.debug && !vscode.extensions.getExtension(plan.debug.extension)) { throw new RunnerError(`Install ${plan.debug.extension} to debug.`); }
@@ -100,10 +101,10 @@ async function execute(plan: EmbeddedPlan, folder: vscode.WorkspaceFolder, execu
     const ran = await executor.exclusive(() => executor.run({ name: plan.label, steps: plan.steps }, folder));
     if (!ran) { throw new RunnerError('Another Sakura Atelier run is in progress.'); }
   }
-  if (plan.debug && !await vscode.debug.startDebugging(folder, plan.debug.configuration as vscode.DebugConfiguration)) { throw new RunnerError('The debug session did not start. See the Debug Console.'); }
+  if (plan.debug) { await debug.start(folder, plan.debug.configuration as vscode.DebugConfiguration); }
 }
 
-async function platformio(name: string, context: vscode.ExtensionContext, executor: TaskExecutor): Promise<void> {
+async function platformio(name: string, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
   const { folder, project: backendProject } = await pickProject('platformio');
   const tools = createToolRegistry(context);
   const pio = await tools.resolve('platformio');
@@ -119,7 +120,7 @@ async function platformio(name: string, context: vscode.ExtensionContext, execut
   }
   const port = operation === 'monitor' || operation === 'upload' || operation === 'testOnDevice' ? await pickPort(pio, project.root) : undefined;
   const plan = buildPlatformioPlan({ operation, pio, project, env, port, metadata, ideExtensionInstalled: !!vscode.extensions.getExtension(platformioIdeExtension), remote: !!vscode.env.remoteName });
-  await execute(plan, folder, executor);
+  await executeEmbeddedPlan(plan, folder, executor, debug);
 }
 
 async function toolPaths(context: vscode.ExtensionContext): Promise<ToolPaths> {
@@ -142,7 +143,7 @@ async function pickFlashTarget(project: NonNullable<Awaited<ReturnType<typeof re
   return { firmware, address, probe: { interface: 'SWD', ...(serial ? { serial } : {}) }, device };
 }
 
-async function stm32(name: string, context: vscode.ExtensionContext, executor: TaskExecutor): Promise<void> {
+async function stm32(name: string, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
   const { folder, project: found } = await pickProject('stm32');
   const project = await readStm32Project(found.root, host);
   if (!project) { throw new RunnerError('The STM32 project could not be read.'); }
@@ -153,13 +154,13 @@ async function stm32(name: string, context: vscode.ExtensionContext, executor: T
   if (operation === 'flash') { flash = await pickFlashTarget(project); if (!flash) { return; } }
   if (operation === 'debug' && !project.ioc?.info.mcu) { device = await vscode.window.showInputBox({ title: 'Target MCU', prompt: 'The MCU is not stated in a .ioc file. Enter it explicitly.' }); if (!device) { return; } }
   const plan = buildStm32Plan({ operation, project, tools, preset, flash, device, cortexDebugInstalled: !!vscode.extensions.getExtension('marus25.cortex-debug'), remote: !!vscode.env.remoteName });
-  await execute(plan, folder, executor);
+  await executeEmbeddedPlan(plan, folder, executor, debug);
 }
 
-export async function runEmbeddedCommand(name: EmbeddedCommandName, context: vscode.ExtensionContext, executor: TaskExecutor): Promise<void> {
+export async function runEmbeddedCommand(name: EmbeddedCommandName, context: vscode.ExtensionContext, executor: TaskExecutor, debug: DebugService): Promise<void> {
   if (!vscode.workspace.isTrusted) { await vscode.window.showWarningMessage('Sakura Atelier: Trust this workspace before using embedded tools; they run local programs.'); return; }
   if (name === 'manageTools') { await manageEmbeddedTools(createToolRegistry(context)); return; }
   if (name === 'reloadDevices') { await (await import('./devices/service')).reloadDevices(context); return; }
-  if (name.startsWith('stm32.')) { await stm32(name, context, executor); return; }
-  await platformio(name, context, executor);
+  if (name.startsWith('stm32.')) { await stm32(name, context, executor, debug); return; }
+  await platformio(name, context, executor, debug);
 }
