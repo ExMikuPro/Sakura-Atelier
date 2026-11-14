@@ -69,13 +69,13 @@ export async function run(): Promise<void> {
   await expect(frame.locator('#create')).toBeEnabled();
   await frame.locator('#create').click();
   await expect.poll(() => fs.stat(path.join(root, 'LanguageHostPython/src/main.py')).then(s => s.isFile(), () => false)).toBe(true);
+  // File writes precede draft persistence and the completion notification.
+  // A first source file is not proof that the remaining files have been written.
+  await expect(page.locator('.notification-list-item').filter({ hasText: 'LanguageHostPython' })).toBeVisible({ timeout: 30000 });
   const projectConfig = JSON.parse(await fs.readFile(path.join(root, 'LanguageHostPython/.vscode/sakura-atelier.json'), 'utf8'));
   assert.equal(projectConfig.configurations[0].templateId, 'python.script');
-  // File writes precede draft persistence and the completion notification.
-  // Wait for completion before closing/reopening the wizard.
-  await expect(page.locator('.notification-list-item').filter({ hasText: 'LanguageHostPython' })).toBeVisible();
   await vscode.commands.executeCommand('notifications.clearAll');
-  await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  await expect.poll(async () => frame.isDetached() || !await frame.frameElement().then(element => element.isVisible()).catch(() => false), { timeout: 30000 }).toBe(true);
   frame = await wizard();
   const stm32 = frame.locator('#nav button').filter({ hasText: 'STM32CubeMX' }).first();
   await stm32.click();
