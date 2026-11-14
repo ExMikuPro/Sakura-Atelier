@@ -46,7 +46,7 @@
       },
       {
         "command": "sakuraAtelier.embedded.manageTools",
-        "title": "Sakura Atelier: Embedded Tools..."
+        "title": "%command.sakuraAtelier.embedded.manageTools%"
       },
       {
         "command": "sakuraAtelier.selectConfiguration",
