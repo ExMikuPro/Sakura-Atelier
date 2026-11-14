@@ -93,6 +93,10 @@
         "title": "Sakura Atelier: STM32: Debug"
       },
       {
+        "command": "sakuraAtelier.embedded.reloadDevices",
+        "title": "Sakura Atelier: Reload PlatformIO Boards"
+      },
+      {
         "command": "sakuraAtelier.selectConfiguration",
         "title": "Sakura Atelier: Select Configuration",
         "icon": "$(chevron-down)"

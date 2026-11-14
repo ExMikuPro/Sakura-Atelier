@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   try { initializeEmbeddedState(context); registerEmbeddedEditors(context); } catch (error) { console.error('Sakura Atelier: embedded editors are unavailable.', error); }
   // Embedded support is loaded on first use so activation stays unchanged.
-  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug'] as const){
+  for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug','reloadDevices'] as const){
     context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!);})));
   }
   if(vscode.extensions.getExtension('sakura-runner-local.sakura-runner')){void vscode.window.showInformationMessage('Sakura Atelier has a new extension ID. Disable the old Sakura Runner extension to avoid duplicate toolbar buttons.');}
