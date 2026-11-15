@@ -17,3 +17,14 @@ node_modules/**
 !media/*LICENSE.txt
 !media/icon.png
 !package.nls*.json
+!THIRD_PARTY_NOTICES.md
+!docs/images/*.png
+!docs/LANGUAGE_PROJECT_INITIALIZATION.md
+!docs/MACOS_INTEGRATION_2026-11-14.md
+!docs/PLATFORMIO_WORKFLOW.md
+!docs/PROJECT_CREATION.md
+!docs/STM32_CUBEMX6_WORKFLOW.md
+!docs/STM32_OPENOCD_WORKFLOW.md
+!docs/releases/V0.1.0_RELEASE_CHECKLIST.md
+!docs/releases/V0.1.0_RELEASE_NOTES.md
+!docs/stm32-device-data.md

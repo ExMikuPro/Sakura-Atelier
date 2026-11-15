@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.0] - Unreleased
+
+First Public Preview. 正式发布日期待确认后填写，准备日期不代替发布日期。
+
+### Added
+- 统一运行/调试配置、SDK 自动发现、多语言基础项目创建与中英界面。
+- 经典 STM32CubeMX 6.x 工程创建、CMake 构建与独立烧录/调试入口。
+- PlatformIO 多环境识别、构建、清理、上传、监视、测试及调试集成。
+- 发布验收清单、候选包内容验证与第三方许可声明。
+
+### Changed
+- 候选包文件名读取 package.json，独立目录防止覆盖已有 VSIX。
+- README 明确 macOS Apple Silicon 优先、外部依赖与实验性功能。
+
+### Fixed
+- 并发普通运行和托管运行现在明确提示已有操作执行中。
+- 验证实际 VSIX 内的版本、入口、资源和身份；补齐文档与 JSONC 许可。
+
+### Known Limitations
+- 真实硬件烧录/调试与 CubeMX 6.x 端到端生成仍需验收。
+- Java/Spring、C# 为实验性；数据库暂不支持，其他平台未完成验收。
+- 构建工具依赖存在 moderate npm audit 告警，未打入扩展运行包；详见验收报告。
+
+---
+
+## 开发历史（原始记录）
+
 ## 0.1.0 — 本地开发版本
 
 版本按项目要求保持 0.1.0，发布 Marketplace 后再调整。

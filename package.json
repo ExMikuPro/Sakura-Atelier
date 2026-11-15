@@ -775,7 +775,7 @@
     "lint": "eslint src test scripts",
     "test": "npm run compile && npm run lint && node --test out/test/*.test.js",
     "test:integration": "npm run compile && node scripts/integration.cjs",
-    "package": "npm run compile && vsce package --no-dependencies --baseContentUrl https://github.com/ExMikuPro/Sakura-Atelier/blob/dev/ --baseImagesUrl https://github.com/ExMikuPro/Sakura-Atelier/raw/dev/ --out sakura-atelier-0.1.0.vsix && node scripts/verify-package.cjs",
+    "package": "npm run compile && node scripts/package.cjs",
     "test:ui": "npm run compile && playwright test",
     "test:wizard": "npm run compile && node scripts/wizard-integration.cjs",
     "test:projects": "npm run compile && node scripts/projects-integration.cjs",
@@ -806,5 +806,17 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/ExMikuPro/Sakura-Atelier.git"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/ExMikuPro/Sakura-Atelier/issues"
+  },
+  "homepage": "https://github.com/ExMikuPro/Sakura-Atelier#readme",
+  "keywords": [
+    "run",
+    "debug",
+    "toolchain",
+    "stm32",
+    "platformio",
+    "project"
+  ]
 }

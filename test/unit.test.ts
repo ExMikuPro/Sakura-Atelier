@@ -115,3 +115,17 @@ test('untrusted workspace rejects Run before planning or execution', async () =>
   for (const command of ['sakuraRunner.run', 'sakuraRunner.runFile', 'sakuraRunner.runProject']) { await commands.get(command)!(); }
   assert.equal(warnings, 3); assert.equal(runs, 0);
 });
+
+test('concurrent legacy Run reports a busy error instead of silently returning', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const source = await fs.readFile(path.resolve(__dirname, '../src/extension.js'), 'utf8');
+  const commands = new Map<string, () => Promise<void>>();
+  let warnings = 0; let runs = 0; const errors:string[]=[];
+  class FakeExecutor { dispose() {} stop() {} async exclusive() { runs++; return false; } }
+  const fakeVSCode = { extensions: {getExtension:()=>undefined}, workspace: { isTrusted: true,createFileSystemWatcher:()=>({dispose(){},onDidDelete:()=>({dispose(){}}),onDidCreate:()=>({dispose(){}}),onDidChange:()=>({dispose(){}})}),onDidChangeWorkspaceFolders:()=>({dispose(){}}),onDidGrantWorkspaceTrust:()=>({dispose(){}}),onDidChangeConfiguration:()=>({dispose(){}}) }, window: {onDidChangeActiveTextEditor:()=>({dispose(){}}), showWarningMessage: async () => { warnings++; }, showErrorMessage:async(message:string)=>{errors.push(message);} }, commands: {executeCommand:async()=>{}, registerCommand: (name: string, command: () => Promise<void>) => { commands.set(name, command); return { dispose() {} }; } } };
+  const exports: { activate?: (context: { subscriptions: unknown[] }) => void } = {};
+  runInNewContext(source, { exports, require: (name: string) => name === 'vscode' ? fakeVSCode : name === './embedded/platformio/workflow' ? {activePlatformioRoot:async()=>undefined} : name === './embedded/stm32/intellisense' ? {Stm32IntelliSense:class{dispose(){}}} : name === './embedded/editors' ? {initializeEmbeddedState:()=>{},registerEmbeddedEditors:()=>{}} : name === './environment/hostServices' ? {startHostToolchains:()=>({dispose(){}})} : name === './i18n'?{language:()=> 'zh-cn'}:name==='./ui'?{ui:fakeVSCode.window}:name === './controller' ? { AtelierController: class { dispose() {} updateStatus(){} } } : name === './executor' ? { TaskExecutor: FakeExecutor } : name === './model' ? { supports, RunnerError: Error } : {}, console, setTimeout:()=>0,clearTimeout });
+  exports.activate!({ subscriptions: [] });
+  for (const command of ['sakuraRunner.runFile', 'sakuraRunner.runProject']) { await commands.get(command)!(); }
+  assert.equal(warnings, 0); assert.equal(runs, 2); assert.equal(errors.length,2); for(const message of errors)assert.match(message,/Another Sakura Atelier operation is running/);
+});

@@ -5,3 +5,5 @@ out/
 .test-output/
 
 /media/localization.js
+
+sakura-release-candidate-*/

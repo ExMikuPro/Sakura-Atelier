@@ -109,7 +109,7 @@ export class AtelierController implements vscode.Disposable {
     const embedded=selection.kind==='managed'?document.configurations.find(c=>c.id===selection.id && c.templateId==='stm32'):undefined;
     if(embedded){await (await import('./embedded/stm32/workflow')).runStm32Configuration(this,ctx.folder,embedded,action==='debug'?'debug':embedded.stm32Action==='build'?'build':embedded.stm32Action==='debug'?'debug':'run');return;}
     if(action==='run'&&['auto','file','project'].includes(selection.kind)){await this.legacy(selection.kind==='file'?'file':selection.kind==='project'?'project':undefined);return;}
-    await this.executor.exclusive(async()=>{
+    if (!await this.executor.exclusive(async()=>{
       const doc=vscode.window.activeTextEditor?.document;if(doc?.isDirty&&!await doc.save()){throw new RunnerError('Save failed; execution cancelled.');}
       if(selection.kind==='task'&&action==='run'){await this.runTask(ctx.folder,selection.id!);return;}
       if(selection.kind==='launch'){await this.launchNamed(ctx,selection.id!,action==='run');return;}
@@ -122,7 +122,7 @@ export class AtelierController implements vscode.Disposable {
       }
       if(!managed){managed=newConfiguration(ctx.language,selection.kind==='test'?`${ctx.language}: ${t('Test Project')}`:`${ctx.language}: ${t(action)}`);managed.id='automatic';managed.cwd=ctx.root;managed.target=selection.kind==='test'?(ctx.language==='go'?'./...':'.'):ctx.file;managed.kind=selection.kind==='test'?'project':'file';if(selection.kind==='test'){managed.operation='test';}}
       await this.executeManaged(managed,ctx,action);
-    });
+    })) throw new RunnerError('Another Sakura Atelier operation is running. Stop it before starting a new one.');
   }
   defaultSdk(language:string,folder:vscode.WorkspaceFolder){const id=this.store.defaultToolchain(language,folder)||(['javascript','javascriptreact','typescript','typescriptreact'].includes(language)?this.store.defaultToolchain('node',folder):'');return this.store.toolchains(folder).find(t=>t.id===id);}
   async runTask(folder:vscode.WorkspaceFolder,label:unknown):Promise<void>{const match=(t:vscode.Task)=>typeof label==='string'?t.name===label:!!label&&typeof label==='object'&&Object.entries(label).every(([key,value])=>t.definition[key]===value);const matches=(await vscode.tasks.fetchTasks()).filter(t=>t.definition.type!=='sakuraRunner'&&match(t)&&(typeof t.scope!=='object'||t.scope.uri.toString()===folder.uri.toString()));if(matches.length!==1){throw new RunnerError(`Task "${label}" was not found or is ambiguous in ${folder.name}.`,true);}await this.executor.runExisting(matches[0]);}

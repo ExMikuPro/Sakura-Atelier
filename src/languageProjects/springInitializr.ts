@@ -6,7 +6,7 @@ export interface InitializrChoice {id:string;name:string;versionRange?:string;de
 export interface InitializrMetadata {bootVersions:InitializrChoice[];javaVersions:InitializrChoice[];builds:InitializrChoice[];dependencies:InitializrChoice[]; defaultJava?:string;defaultBoot?:string}
 const origin='https://start.spring.io';
 async function response(url:string,signal?:AbortSignal):Promise<Response>{
-  const reply=await fetch(url,{headers:{Accept:'application/vnd.initializr.v2.3+json','User-Agent':'Sakura-Atelier/0.1.0'},signal:signal || AbortSignal.timeout(30000)});
+  const reply=await fetch(url,{headers:{Accept:'application/vnd.initializr.v2.3+json','User-Agent':'Sakura-Atelier'},signal:signal || AbortSignal.timeout(30000)});
   if(!reply.ok)throw new Error(`Spring Initializr 请求失败：HTTP ${reply.status}`);return reply;
 }
 export async function initializrMetadata(signal?:AbortSignal):Promise<InitializrMetadata>{

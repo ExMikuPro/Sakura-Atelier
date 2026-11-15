@@ -93,7 +93,7 @@ async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): 
   if (!vscode.workspace.isTrusted) { await ui.showWarningMessage('Sakura Atelier: Code execution is disabled in an untrusted workspace. Trust this workspace before running.'); return; }
   if (!executor) { return; }
   try {
-    await executor.exclusive(async () => {
+    if (!await executor.exclusive(async () => {
       const document = vscode.window.activeTextEditor?.document;
       if (!document || document.uri.scheme !== 'file' || !supports(document.languageId)) { throw new RunnerError('Open a supported code file to run.'); }
       if (document.isDirty && !await document.save()) { throw new RunnerError('File could not be saved; run cancelled.'); }
@@ -144,7 +144,7 @@ async function run(mode: Mode | undefined, configure: () => Thenable<unknown>): 
         const picked = plans.length === 1 ? plans[0] : (await ui.showQuickPick(plans.map((plan, i) => ({ label: plan.name, i })), { title: 'Sakura Atelier: Select run target' }));
         if (picked) { const selected='i' in picked ? plans[picked.i] : picked; if(sdk&&!legacyCustom){for(const step of selected.steps){step.env={...step.env,[process.platform==='win32'?'Path':'PATH']:[path.dirname(sdk.executable),process.env.PATH||''].join(path.delimiter),...(sdk.rustToolchain?{RUSTUP_TOOLCHAIN:sdk.rustToolchain}:{})};if(document.languageId==='go'&&step.command==='go'||document.languageId==='rust'&&step.command==='cargo'||document.languageId==='csharp'&&step.command==='dotnet'||['javascript','javascriptreact','typescript','typescriptreact'].includes(document.languageId)&&/^node(?:\.exe)?$/.test(path.basename(step.command))){step.command=sdk.executable;}}}await executor!.run(selected, folder); }
       } finally { await fs.rm(cache, { recursive: true, force: true }); }
-    });
+    })) throw new RunnerError('Another Sakura Atelier operation is running. Stop it before starting a new one.');
   } catch (error) {
     if (error instanceof RunnerError && error.message === 'Run stopped.') { return; }
     console.error('Sakura Atelier legacy Run:',error);

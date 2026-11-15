@@ -4,12 +4,12 @@
 
 # 🌸 Sakura Atelier
 
-**连接桌面软件与嵌入式系统的统一多语言跨平台 VS Code 开发工作空间**
+**First Public Preview · v0.1.0 · macOS Apple Silicon 优先**
 
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85.0%2B-007ACC?style=flat-square&logo=visual-studio-code)](https://code.visualstudio.com/)
 [![Version](https://img.shields.io/badge/Version-0.1.0-f48fb1?style=flat-square)](https://github.com/ExMikuPro/Sakura-Atelier)
 [![Language](https://img.shields.io/badge/Language-简体中文%20%7C%20English-880e4f?style=flat-square)](#5-双语支持与架构特性)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20(ARM64)%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square)](#当前状态与验证范围)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20(ARM64)-lightgrey?style=flat-square)](#当前状态与验证范围)
 
 [核心理念](#核心理念) • [核心功能](#核心功能) • [支持的语言与嵌入式生态](#支持的语言与嵌入式生态) • [快速开始](#快速开始) • [配置与安全机制](#配置与安全机制) • [项目结构](#项目结构)
 
@@ -21,7 +21,7 @@
 
 **Sakura Atelier**（扩展 ID：`ExMikuPro.sakura-atelier`）是一款基于 Visual Studio Code 开发的开源、多语言、跨平台开发辅助扩展。
 
-在日常开发中，开发者往往需要在不同的语言插件、构建脚本、终端命令行与硬件烧录软件之间频繁切换。Sakura Atelier 致力于将**项目创建、代码运行、断点调试、运行配置、SDK 管理与嵌入式工具链**整合到统一、简洁且可移植的工作流中：
+在日常开发中，开发者往往需要在不同的语言插件、构建脚本、终端命令行与硬件烧录软件之间频繁切换。目标是让开发者尽可能在 30 秒内进入编码状态（设计目标，并非性能保证）。Sakura Atelier 致力于将**项目创建、代码运行、断点调试、运行配置、SDK 管理与嵌入式工具链**整合到统一、简洁且可移植的工作流中：
 
 - **统一入口，拒绝割裂**：所有语言与硬件工程共用同一套编辑器顶部工具栏（`Run` / `Debug` / `Select Configuration` / `Stop`）与可视化设置中心，不抢占快捷键（如 `F5`），不侵入修改用户全局配置或已有 `launch.json` / `tasks.json`。
 - **生态复用，克制设计**：采用模块化适配器架构（`RuntimeAdapter`），充分复用官方编译器、调试扩展（如 CodeLLDB、Python Debugger、Cortex-Debug、PlatformIO IDE）与系统包管理器，不重复造轮子。
@@ -58,8 +58,8 @@
 - **PlatformIO 集成**：自动解析 `platformio.ini` 中的多环境（`[env:*]`），提供构建（Build）、清理（Clean）、上传（Upload）、串口监视器（Monitor）、测试及调试入口。
 - **STM32 独立工程流**：支持识别 STM32CubeMX 与 STM32 CMake 工程，自动发现 Arm GNU Toolchain、CMake、Ninja、STM32CubeProgrammer 与 ST-LINK GDB Server。
 - **经典 STM32CubeMX 6.x 工程生成**：通过内置 CLI `-q` / `-s` 创建 `.ioc` 和 CMake 工程，支持 `-i` 配置及已有工程重新生成（详见 [STM32CubeMX 6.x 工作流说明](docs/STM32_CUBEMX6_WORKFLOW.md)）。
-- **操作严格分离**：将 **Build（构建）**、**Flash（烧录）** 与 **Debug（调试）** 拆分为独立动作，普通运行绝不会误触发硬件烧录，烧录过程仅执行编程与校验，拒绝整片擦除参数。
-- **专用 `.ioc` 只读视图**：双击 `.ioc` 文件即可在 VS Code 内直观查看工程与 MCU 摘要，并提供安全唤起本地 STM32CubeMX 的入口（SSH/WSL/容器远程环境下自动禁用本地启动并给出提示）。
+- **操作严格分离**：将 **Build（构建）**、**Flash（烧录）** 与 **Debug（调试）** 拆分为独立动作，STM32 托管配置中的“运行”会在确认后烧录并启动；仅 Build 不烧录。托管工作流使用 OpenOCD，兼容后端仍提供 STM32CubeProgrammer 计划；请核对所选配置与确认弹窗。
+- **专用 `.ioc` 只读视图**：通过“打开方式 → Sakura Atelier STM32CubeMX Project”可在 VS Code 内查看工程与 MCU 摘要，并提供安全唤起本地 STM32CubeMX 的入口（SSH/WSL/容器远程环境下自动禁用本地启动并给出提示）。
 
 ### 5. 双语支持与架构特性
 - **即时中英双语切换**：通过 `sakuraAtelier.language`（支持 `zh-cn`、`en`、`auto`）即时切换设置中心、模板、状态提示与确认弹窗语言，同时保持用户自定义名称与工具原始输出不被篡改。
@@ -90,7 +90,7 @@
 - **源码构建要求**：Node.js `22+` 与 `npm`
 
 ### 安装方式
-1. 从 Release 页面下载最新的 `sakura-atelier-0.1.0.vsix`（或通过源码自行打包）。
+1. 当前处于发布准备阶段，尚无公开 Release。运行下文 `npm ci` 与 `npm run package`，安装输出的 `sakura-release-candidate-*/sakura-atelier-<version>.vsix`。正式发布后可从 [Releases](https://github.com/ExMikuPro/Sakura-Atelier/releases) 下载。
 2. 打开 VS Code，进入 **扩展视图（Extensions） → 右上角 `...` 菜单 → Install from VSIX...** 选择安装包。
 3. 安装完成后执行 **Reload Window**。
 
@@ -186,7 +186,7 @@ Sakura-Atelier/
 
 ## 当前状态与验证范围
 
-本项目目前处于持续开发阶段（`v0.1.0`），核心集成测试与 UI 回归主要在 **macOS ARM64 (Apple Silicon)** 环境下完成：
+本项目为 First Public Preview（`v0.1.0`，正式发布日期待定），核心集成测试与 UI 回归主要在 **macOS ARM64 (Apple Silicon)** 环境下完成：
 
 - **已真实验证**：macOS ARM64 下的编译打包、可视化设置中心、项目创建向导（全语言工程生成与依赖初始化）、多语言运行与 Node.js / TypeScript / Python 断点调试、虚拟环境自动创建与激活、Homebrew 只读包查询以及 `.ioc` 只读编辑器。
 - **实现完成待实机深化测试**：
@@ -201,3 +201,22 @@ Sakura-Atelier/
 Made with 🌸 by [ExMikuPro](https://github.com/ExMikuPro)
 
 </div>
+
+## 预览版限制与反馈 / Preview limitations and feedback
+
+- macOS Apple Silicon 是首发验收平台；Intel Mac、Windows、Linux、SSH/WSL/容器尚未完成原生端到端验收。
+- Java / Spring 与 C# 在此预览版标记为实验性；Java 已有真实创建构建记录，C# 缺少本轮 .NET 验收。数据库工作流暂不支持。
+- 已有 STM32 CMake/Ninja + ARM GCC 15.3.1 生成 ELF、PlatformIO Core 6.2.0 和 C/C++ 补全验证记录，详见对应工作流文档；它们不代表硬件烧录通过。
+- 创建失败会保留目录，重新创建不会覆盖该目录。先查看日志并修复环境；Python 可使用“重新创建项目虚拟环境”，TypeScript 可在现有目录重试包管理器安装。若需重做向导，请另选新目录。
+- 编译器/SDK、Python、Node.js、CMake/Ninja、Arm GNU、CubeMX 6.x、OpenOCD / CubeProgrammer、PlatformIO Core 按项目类型自行准备。调试依赖 Python Debugger、Go/Delve、CodeLLDB、Cortex-Debug 或官方 PlatformIO IDE 等对应扩展，未将它们设为强制依赖或扩展包。
+- [发布验收清单](docs/releases/V0.1.0_RELEASE_CHECKLIST.md) 与 [Release Notes](docs/releases/V0.1.0_RELEASE_NOTES.md) 记录当前边界。反馈请提交 [GitHub Issue](https://github.com/ExMikuPro/Sakura-Atelier/issues)，附版本、系统架构、复现步骤及脱敏日志。
+
+## English quick start
+
+Sakura Atelier **v0.1.0 — First Public Preview** brings run/debug configurations, local SDK discovery, basic language project creation, classic STM32CubeMX 6.x and PlatformIO workflows into VS Code. The aim is to get developers coding within 30 seconds; this is a design goal, not a benchmark.
+
+The release target is **macOS, Apple Silicon first**, with VS Code 1.85+. Other platforms and remote environments are not verified end to end. Java/Spring and C# are experimental; database workflows are unsupported. Hardware flashing/debugging and real CubeMX generation require manual acceptance. Existing STM32 CMake/ELF and PlatformIO Core evidence is preserved in the workflow documents.
+
+No public release has been published yet. Build with Node.js 22+, `npm ci`, then `npm run package`. Install the VSIX via **Extensions → … → Install from VSIX**, then reload. Open a trusted folder, run **Sakura Atelier: New Project**, select an installed SDK, create a project, and use **Select Configuration**, **Run**, **Debug**, and **Stop**. Install toolchains and debug extensions separately. STM32 managed **Run** flashes after confirmation; **Build** only compiles.
+
+Initialization can download project dependencies after the creation preview. Failure preserves partial files: inspect the log, repair the existing environment, or retry in a new directory. Report issues with sanitized logs at [GitHub Issues](https://github.com/ExMikuPro/Sakura-Atelier/issues). See the [release notes](docs/releases/V0.1.0_RELEASE_NOTES.md) for limitations.
