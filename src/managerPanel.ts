@@ -163,6 +163,7 @@ export class ManagerPanel implements vscode.Disposable {
       add: add || this.pendingAdd,
       folder: this.editor.folder.uri.toString(),
       root: this.editor.root,
+      workspacePath: this.editor.folder.uri.fsPath,
       file: this.editor.file,
       language: this.editor.language,
       workspaces: (vscode.workspace.workspaceFolders ?? []).map((f) => ({
@@ -175,6 +176,8 @@ export class ManagerPanel implements vscode.Disposable {
         languages: p.languages,
         folder: p.folder.uri.toString(),
       })),
+      platformioProjects: await (await import('./embedded/platformio/workflow')).platformioUiProjects(this.controller,this.editor.folder),
+      embeddedTools: vscode.workspace.isTrusted ? await (await import('./embedded/toolsCommand')).createToolRegistry(this.controller.context).discover() : {},
       toolchains: tools,
       launch: await launchConfigurations(this.editor.folder),
       sdkStatus: this.sdkStatus(),
@@ -550,6 +553,11 @@ export class ManagerPanel implements vscode.Disposable {
       return;
     }
     const editor = this.editor;
+    if (m.type === "embeddedTools") {
+      await vscode.commands.executeCommand('sakuraAtelier.embedded.manageTools');
+      await this.sendState();
+      return;
+    }
     if (m.type === "ready" || m.type === "reload") {
       this.ready = true;
       if (!this.initializing) {

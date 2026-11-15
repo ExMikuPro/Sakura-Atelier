@@ -1,3 +1,6 @@
+import { initializedScaffold } from '../../languageProjects/scaffolds';
+import { languageOption, javaOptionError, LanguageProjectOptions, ProjectSdk } from '../../languageProjects/options';
+import type { InitializationRequest } from '../../languageProjects/initialize';
 import { projectScaffold, runtimeForProject } from '../../projectScaffolds';
 import type { RuntimeLanguage } from '../../configuration';
 import * as path from 'node:path';
@@ -15,12 +18,13 @@ export interface CreationRequest {
   options?: CreationOptions;
 }
 /** The only tunables. Values are validated, and none of them can carry a path. */
-export interface CreationOptions { monitorSpeed?: string; sampleCode?: boolean; generator?: 'cmake' | 'makefile' | 'cubeide'; cliMode?: 'quiet' | 'script' }
+export interface CreationOptions extends LanguageProjectOptions { monitorSpeed?: string; sampleCode?: boolean; generator?: 'cmake' | 'makefile' | 'cubeide'; cliMode?: 'quiet' | 'script' }
 
 export interface CreationContext {
   template: ProjectTemplate | undefined;
   /** Tools as found right now; never stored with a template. */
-  tools: { pio?: string; cubemx?: string; cmake?: string; armGcc?: string; ninja?: string; runtimes?: Partial<Record<RuntimeLanguage, string>> };
+  sdkChoices?: ProjectSdk[];
+  tools: { uv?:string; npm?:string; pnpm?:string; maven?:string; gradle?:string; pio?: string; cubemx?: string; cmake?: string; armGcc?: string; ninja?: string; runtimes?: Partial<Record<RuntimeLanguage, string>> };
   /** Boards known to PlatformIO right now, by id. */
   boards: ReadonlyMap<string, PioBoardInfo>;
   fs: { exists(file: string): Promise<boolean>; isDirectory(file: string): Promise<boolean> };
@@ -28,13 +32,15 @@ export interface CreationContext {
   remote?: boolean; platform?: NodeJS.Platform;
 }
 
-export type BlockerCode = 'template' | 'name' | 'parent' | 'exists' | 'device-required' | 'device-kind' | 'board-unknown' | 'framework' | 'option' | 'no-pio' | 'not-stm32' | 'no-cubemx' | 'remote-cubemx' | 'cubemx-path';
+export type BlockerCode = 'template' | 'name' | 'parent' | 'exists' | 'device-required' | 'device-kind' | 'board-unknown' | 'framework' | 'option' | 'no-pio' | 'not-stm32' | 'no-cubemx' | 'remote-cubemx' | 'cubemx-path' | 'initialization';
 export interface Blocker { code: BlockerCode; message: string }
 export type CreationStep =
+  | { kind: 'initialize'; request: InitializationRequest }
   | { kind: 'mkdir'; path: string }
   | { kind: 'run'; command: string; args: string[]; cwd: string; label: string }
   | { kind: 'generate-cubemx'; job: CubeMxGeneration }
   | { kind: 'write'; path: string; content: string }
+  | { kind: 'arduino-entry'; path: string }
   | { kind: 'open'; path: string };
 
 export interface PlanWarning { code: 'remote-cubemx' | 'no-cubemx' | 'no-runtime' | 'project-dependencies'; message: string }
@@ -50,7 +56,8 @@ export function validateProjectName(name: string): string | undefined {
 export function sanitizeOptions(raw: unknown): { options: CreationOptions; invalid: string[] } {
   const options: CreationOptions = {}; const invalid: string[] = [];
   for (const [key, value] of Object.entries(raw && typeof raw === 'object' ? raw as Record<string, unknown> : {})) {
-    if (key === 'monitorSpeed' && typeof value === 'string' && /^\d{3,7}$/.test(value)) { options.monitorSpeed = value; }
+    if (languageOption(key,value)) { Object.assign(options,{[key]:value}); }
+    else if (key === 'monitorSpeed' && typeof value === 'string' && /^\d{3,7}$/.test(value)) { options.monitorSpeed = value; }
     else if (key === 'sampleCode' && typeof value === 'boolean') { options.sampleCode = value; }
     else if (key === 'generator' && (value === 'cmake' || value === 'makefile' || value === 'cubeide')) { options.generator = value; }
     else if (key === 'cliMode' && (value === 'quiet' || value === 'script')) { options.cliMode = value; }
@@ -82,9 +89,16 @@ export async function planCreation(request: CreationRequest, context: CreationCo
   else if (!nameProblem && await context.fs.exists(target)) { block('exists', `"${request.name}" already exists in this folder. Choose another name; existing files are never overwritten.`); }
 
   if (template.backend === 'general') {
-    const files = template.language ? projectScaffold(template.language, request.name || 'my-project') : [];
-    if (template.language && !context.tools.runtimes?.[runtimeForProject(template.language)]) warnings.push({ code: 'no-runtime', message: 'The project can be created; configure its SDK before Run or Debug.' });
-    if (template.language === 'typescript') warnings.push({ code: 'project-dependencies', message: 'Install the declared project dependencies before Run. Creation does not install them.' });
+    const language=template.language;
+    const initializes=language==='python'||language==='typescript'||language==='java';
+    const runtime=language ? runtimeForProject(language) : undefined;
+    const selected=options.sdkId ? context.sdkChoices?.find(t=>t.id===options.sdkId && t.language===runtime)?.executable : runtime ? context.tools.runtimes?.[runtime] : undefined;
+    if(initializes && !selected)block('initialization','请选择可用 SDK 后创建项目；初始化不会静默跳过。');
+    if(language==='java'){const problem=javaOptionError(options);if(problem)block('initialization',problem);}
+    if(language==='python' && options.pythonManager==='uv' && !context.tools.uv)block('initialization','未找到 uv，请选择 pip 或先安装 uv。');
+    if(language==='typescript' && options.nodeManager==='pnpm' && !context.tools.pnpm)block('initialization','未找到 pnpm，请选择 npm 或先安装 pnpm。');
+    const files = language && language!=='java' ? (initializes ? initializedScaffold(language,request.name || 'my-project',options) : projectScaffold(language, request.name || 'my-project')) : [];
+    if (template.language && !initializes && !context.tools.runtimes?.[runtimeForProject(template.language)]) warnings.push({ code: 'no-runtime', message: 'The project can be created; configure its SDK before Run or Debug.' });
     if (!blockers.length) {
       steps.push({ kind: 'mkdir', path: target });
       const directories = new Set<string>();
@@ -94,9 +108,10 @@ export async function planCreation(request: CreationRequest, context: CreationCo
       }
       for (const dir of [...directories].sort((a, b) => a.split(path.sep).length - b.split(path.sep).length)) steps.push({ kind: 'mkdir', path: path.join(target, dir) });
       for (const file of files) steps.push({ kind: 'write', path: path.join(target, file.path), content: file.content });
+      if(initializes && selected)steps.push({kind:'initialize',request:{language:language as 'python'|'typescript'|'java',root:target,name:request.name,sdk:selected,options,tools:{uv:context.tools.uv,maven:context.tools.maven,gradle:context.tools.gradle}}});
       steps.push({ kind: 'open', path: target });
     }
-    preview.push(template.label, target, ...files.map(file => file.path));
+    preview.push(template.label, target, ...files.map(file => file.path), ...(initializes?['初始化依赖并验证环境，完成后才提示可用']:[]));
     return { target, steps, blockers, warnings, preview };
   }
 
@@ -114,8 +129,9 @@ export async function planCreation(request: CreationRequest, context: CreationCo
     if (!context.tools.pio) { block('no-pio', 'PlatformIO Core was not found. Locate it with "Sakura Atelier: Embedded Tools...".'); }
     if (!blockers.length && device && context.tools.pio) {
       steps.push({ kind: 'mkdir', path: target });
-      const args = ['project', 'init', '-d', target, '--board', device.id, '--project-option', `framework=${request.framework}`, ...(options.monitorSpeed ? ['--project-option', `monitor_speed=${options.monitorSpeed}`] : []), ...(options.sampleCode ? ['--sample-code'] : []), '--no-install-dependencies'];
+      const args = ['project', 'init', '-d', target, '--board', device.id, '--project-option', `framework=${request.framework}`, ...(options.monitorSpeed ? ['--project-option', `monitor_speed=${options.monitorSpeed}`] : []), ...(options.sampleCode && request.framework !== 'arduino' ? ['--sample-code'] : []), '--no-install-dependencies'];
       steps.push({ kind: 'run', command: context.tools.pio, args, cwd: request.parentDir, label: 'pio project init' });
+      if (request.framework === 'arduino') { steps.push({kind:'arduino-entry',path:path.join(target,'src')}); preview.push('src/main.cpp — Arduino.h / setup() / loop()'); }
       steps.push({ kind: 'open', path: target });
     }
     preview.push(`PlatformIO · ${board?.name ?? device?.id ?? ''} (${device?.id ?? ''})`, `framework = ${request.framework ?? ''}`, `${target}`);
@@ -147,6 +163,9 @@ export interface CreationDeps {
   run(command: string, args: string[], cwd: string): Promise<void>;
   /** Must use exclusive creation; never overwrite an existing file. */
   writeFile?(file: string, content: string): Promise<void>;
+  initializeProject?(request:InitializationRequest):Promise<void>;
+  cancelled?():boolean;
+  ensureArduinoEntry?(directory: string): Promise<unknown>;
   generateCubeMx?(job: CubeMxGeneration): Promise<void>;
 }
 export interface CreationResult { target: string; open?: string; launched: boolean }
@@ -156,8 +175,11 @@ export async function executeCreation(plan: CreationPlan, deps: CreationDeps): P
   if (plan.blockers.length) { throw new Error(plan.blockers.map(b => b.message).join(' ')); }
   let launched = false; let open: string | undefined;
   for (const step of plan.steps) {
-    if (step.kind === 'mkdir') { await deps.mkdir(step.path); }
+    if(deps.cancelled?.())throw new Error('创建已取消，工程文件已保留。');
+    if (step.kind === 'initialize') {if(!deps.initializeProject)throw new Error('项目初始化器不可用。');await deps.initializeProject(step.request);}
+    else if (step.kind === 'mkdir') { await deps.mkdir(step.path); }
     else if (step.kind === 'write') { if (!deps.writeFile) throw new Error('Project file writer is unavailable.'); await deps.writeFile(step.path, step.content); }
+    else if (step.kind === 'arduino-entry') { if (!deps.ensureArduinoEntry) throw new Error('Arduino source writer is unavailable.'); await deps.ensureArduinoEntry(step.path); }
     else if (step.kind === 'run') { await deps.run(step.command, step.args, step.cwd); }
     else if (step.kind === 'generate-cubemx') { if (!deps.generateCubeMx) throw new Error('CubeMX generator is unavailable.'); await deps.generateCubeMx(step.job); launched = true; }
     else { open = step.path; }

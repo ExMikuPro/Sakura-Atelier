@@ -73,5 +73,14 @@
   "command.rescanToolchains": "Rescan Current Host Toolchains",
   "command.checkProjectDependencies": "Sakura Atelier: Check Project Dependencies...",
   "command.sakuraAtelier.embedded.stm32.generate": "Sakura Atelier: STM32CubeMX 6.x: Generate CMake Project",
-  "command.sakuraAtelier.embedded.stm32.configureCLI": "Sakura Atelier: STM32CubeMX 6.x: Configure with CLI (-i)"
+  "command.sakuraAtelier.embedded.stm32.configureCLI": "Sakura Atelier: STM32CubeMX 6.x: Configure with CLI (-i)",
+  "command.sakuraAtelier.embedded.stm32.run": "STM32 — 运行（烧录并启动）",
+  "setting.sakuraAtelier.stm32.autoIntelliSense": "Automatically provide STM32 C/C++ IntelliSense configuration while preserving existing configurations and providers.",
+  "command.sakuraAtelier.embedded.platformio.stopMonitor": "PlatformIO: Stop Serial Monitor",
+  "command.sakuraAtelier.embedded.platformio.refreshConfigurations": "PlatformIO: Refresh Project Configurations",
+  "command.sakuraAtelier.embedded.platformio.refreshIntelliSense": "PlatformIO: Refresh IntelliSense",
+  "setting.sakuraAtelier.platformio.autoIntelliSense": "Configure C/C++ IntelliSense from PlatformIO IDE metadata. A trusted active project may prepare metadata and download missing SDK packages; no firmware is uploaded.",
+  "command.sakuraAtelier.build": "Build Project",
+  "command.sakuraAtelier.python.recreateEnvironment": "Python: Recreate Project Virtual Environment",
+  "command.sakuraAtelier.java.configureBuildTools": "Java: Configure Maven / Gradle / Wrapper"
 }

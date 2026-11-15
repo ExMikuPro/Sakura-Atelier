@@ -492,6 +492,7 @@
       input.onchange = () => {
         if (!flush()) return;
         c[key] = input.value;
+        if (key === "pioEnvironment") for (const other of draft.configurations) { if (other.templateId === "platformio" && other.target === c.target) other.pioEnvironment = c.pioEnvironment; }
         mark(true);
         if (key === "language") c.templateId = "";
         if (
@@ -985,6 +986,65 @@
     const form = el("div", undefined, "form");
     main.append(form);
     field(form, "name", "Configuration name", { wide: true });
+    if (c.templateId === "platformio") {
+      field(form, "target", "PlatformIO 工程目录", { wide: true });
+      const project = state.platformioProjects?.find(p => c.target === p.root || c.target.replace("${workspaceFolder}", state.workspacePath) === p.root);
+      const environments = project?.environments || [];
+      field(form, "pioEnvironment", "Environment（同一工程的所有操作共用）", { options: [["", "自动 / 首次运行时选择"], ...environments.map(e=>[e.name, `${e.name} · ${e.board}`]), ...(!environments.some(e=>e.name===c.pioEnvironment) && c.pioEnvironment ? [[c.pioEnvironment,c.pioEnvironment]] : [])], rerender: true });
+      const environment = environments.find(e=>e.name===c.pioEnvironment) || (environments.length === 1 ? environments[0] : environments.find(e=>project.defaultEnvironments.length===1 && e.name===project.defaultEnvironments[0]));
+      form.append(el("p", environment ? `Board：${environment.board || "未设置"} · Platform：${environment.platform} · Framework：${environment.framework}` : "请选择 Environment 查看开发板；无法读取时请先在嵌入式工具管理中配置 Core。", "wide"));
+      if (project) form.append(el("p", `项目根目录：${project.root}；default_envs：${project.defaultEnvironments.join(", ") || "未设置"}`, "wide"));
+      form.append(el("h3", "构建", "wide"));
+      form.append(el("p", `当前构建类型：${environment?.options?.build_type || "release（PlatformIO 默认）"}`, "wide"));
+      field(form, "pioAction", "默认操作", { options: [["build","编译"],["upload","运行"],["debug","调试"],["monitor","串口监视"],["test","测试（设备仅构建）"],["clean","清理"]] });
+      field(form, "buildArgs", "构建参数（JSON 数组）", { json: true });
+      form.append(el("p", "构建类型由 platformio.ini 中所选 Environment 的 build_type 决定。", "wide"));
+      form.append(el("h3", "上传", "wide"));
+      field(form, "pioUploadProtocol", "上传协议（留空使用工程配置）");
+      field(form, "pioUploadPort", "上传端口（留空自动发现）");
+      field(form, "pioBuildBefore", "上传前构建", { options: [["true","开启"],["false","关闭（上传已有固件）"]] });
+      field(form, "pioMonitorAfter", "上传后串口监视", { options: [["false","关闭"],["true","开启"]] });
+      form.append(el("h3", "调试", "wide"));
+      form.append(el("p", `调试工具 / 探针：${environment?.options?.debug_tool || "自动检查板载默认探针；外部探针请在 platformio.ini 设置 debug_tool"}。通过 PlatformIO 官方扩展启动 VS Code 调试；连接兼容探针后点击调试。`, "wide"));
+      form.append(el("h3", "串口", "wide"));
+      field(form, "pioMonitorPort", "串口端口（留空使用工程设置或选择）");
+      field(form, "pioMonitorSpeed", "波特率（留空使用工程配置）");
+      field(form, "pioFilters", "过滤器（逗号或空格分隔）");
+      if (environment) form.append(el("p", `工程设置：upload_protocol=${environment.options?.upload_protocol || "自动"}；upload_port=${environment.options?.upload_port || "自动"}；monitor_port=${environment.options?.monitor_port || "自动"}；monitor_speed=${environment.options?.monitor_speed || "默认"}`, "wide"));
+      form.append(button("管理本机 PlatformIO Core", () => send("embeddedTools"), "tools"));
+      return;
+    }
+    if (c.templateId === "stm32") {
+      field(form, "target", "STM32 工程目录", { wide: true });
+      form.append(el("h3", "构建设置", "wide"));
+      field(form, "stm32Action", "默认操作", { options: [["build","编译"],["run","运行（烧录并启动）"],["debug","OpenOCD 调试"]] });
+      field(form, "profile", "构建类型", { options: [["debug","Debug"],["release","Release"]] });
+      field(form, "stm32Preset", "CMake Configure Preset（留空使用工程结构）");
+      field(form, "stm32BuildBefore", "运行或调试前增量编译", { options: [["true","开启"],["false","关闭（将显示待下载固件）"]] });
+      field(form, "stm32Elf", "ELF 路径（留空自动定位）", { wide: true });
+      field(form, "buildArgs", "构建参数", { json: true });
+      const toolField = (key, id, label) => {
+        const candidates = state.embeddedTools?.[id]?.candidates || [];
+        const options = [["", "自动使用本机工具链"], ...candidates.map(t => [t.path, t.path])];
+        if (c[key] && !options.some(o => o[0] === c[key])) options.push([c[key], "已保存的本机工具"]);
+        field(form, key, label, { options, wide: true });
+      };
+      toolField("stm32Gcc", "arm-gcc", "ARM GCC 工具链 / SDK");
+      form.append(el("h3", "烧录设置", "wide"));
+      field(form, "stm32Probe", "调试探针", { options: [["","请选择实际探针"],["stlink","ST-LINK"],["jlink","J-Link"],["cmsis-dap","CMSIS-DAP"],["custom","自定义探针（手动填写 Interface）"]] });
+      field(form, "stm32Interface", "OpenOCD Interface 配置");
+      field(form, "stm32Target", "OpenOCD Target 配置");
+      field(form, "stm32Transport", "传输协议", { options: [["swd","SWD"],["jtag","JTAG"]] });
+      field(form, "stm32Speed", "Adapter Speed（kHz）");
+      toolField("stm32Openocd", "openocd", "OpenOCD 可执行文件");
+      form.append(button("管理本机工具链", () => send("embeddedTools"), "tools"));
+      form.append(el("h3", "OpenOCD 调试设置", "wide"));
+      toolField("stm32Gdb", "arm-gdb", "ARM GDB 可执行文件");
+      field(form, "stm32Port", "GDB Server 端口");
+      field(form, "stm32Load", "调试前下载固件", { options: [["true","开启"],["false","关闭"]] });
+      field(form, "stm32Main", "运行至 main", { options: [["true","开启"],["false","关闭（停在复位处）"]] });
+      return;
+    }
     if (!template) {
       field(form, "language", "Language / Runtime", {
         options: languages.map((l) => [l, languageName[l]]),

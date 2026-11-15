@@ -50,3 +50,16 @@ export async function listPorts(run: Runner, pio: string, cwd: string): Promise<
   const data = parseJsonOutput(await run(pio, ['device', 'list', '--json-output'], cwd));
   return Array.isArray(data) ? data.filter(d => d && typeof d.port === 'string').map(d => ({ port: d.port as string, description: String(d.description ?? '') })) : [];
 }
+
+export interface BoardDebugCapabilities { tools: string[]; defaultTool?: string; onboard: string[] }
+/** Installed board manifests describe probe support; this query never installs a platform. */
+export async function readBoardDebug(run: Runner, pio: string, root: string, board: string): Promise<BoardDebugCapabilities | undefined> {
+  const data=parseJsonOutput(await run(pio,['boards','--installed','--json-output',board],root));
+  if (!Array.isArray(data)) return undefined;
+  const matches=data.filter(item=>item?.id===board);
+  if (matches.length!==1) return undefined;
+  const tools=matches[0].debug?.tools;
+  if (!tools || typeof tools!=='object') return {tools:[],onboard:[]};
+  const entries=Object.entries(tools) as [string,{default?:boolean;onboard?:boolean}][];
+  return {tools:entries.map(([name])=>name),defaultTool:entries.find(([,info])=>info.default)?.[0],onboard:entries.filter(([,info])=>info.onboard).map(([name])=>name)};
+}

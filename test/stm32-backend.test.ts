@@ -10,7 +10,7 @@ import { AdapterRegistry } from '../src/adapterRegistry';
 
 const fixtures = path.resolve(__dirname, '../../test/fixtures/embedded');
 const dir = (name: string) => path.join(fixtures, name);
-const tools: ToolPaths = { cmake: '/t/cmake/bin/cmake', ninja: '/t/ninja/ninja', 'arm-gcc': '/t/arm/bin/arm-none-eabi-gcc', 'arm-gdb': '/t/arm/bin/arm-none-eabi-gdb', stm32programmer: '/t/prog/bin/STM32_Programmer_CLI', 'stlink-gdbserver': '/t/gdb/bin/ST-LINK_gdbserver' };
+const tools: ToolPaths = { openocd:'/t/openocd', cmake: '/t/cmake/bin/cmake', ninja: '/t/ninja/ninja', 'arm-gcc': '/t/arm/bin/arm-none-eabi-gcc', 'arm-gdb': '/t/arm/bin/arm-none-eabi-gdb', stm32programmer: '/t/prog/bin/STM32_Programmer_CLI', 'stlink-gdbserver': '/t/gdb/bin/ST-LINK_gdbserver' };
 const flash = { firmware: '/p/build/Debug/app.elf', probe: { interface: 'SWD' as const }, device: 'STM32G0B1RETx' };
 
 async function plan(root: string, extra: Partial<Stm32PlanInput> & Pick<Stm32PlanInput, 'operation'>) {
@@ -61,7 +61,7 @@ test('a plain CMake project is not mistaken for STM32', async () => { assert.equ
 
 test('Build uses presets when defined and never touches the device', async () => {
   const p = await plan('stm32-cmake', { operation: 'build', preset: 'Release' });
-  assert.deepEqual(p.steps.map(s => s.args), [['--preset', 'Release', '-B', path.join(dir('stm32-cmake'), 'build/Release')], ['--build', path.join(dir('stm32-cmake'), 'build/Release')]]);
+  assert.deepEqual(p.steps.map(s => s.args), [['--preset', 'Release', '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'], ['--build', path.join(dir('stm32-cmake'), 'build/Release')]]);
   assert.equal(p.risk, 'safe'); assert.deepEqual(p.blockers, []);
   assert.ok(p.steps[0].env && p.steps[0].env.PATH.startsWith('/t/arm/bin:'), 'only the step environment is extended');
   assert.deepEqual((await plan('stm32-cmake', { operation: 'build', preset: 'Nope' })).blockers, ['CMake preset "Nope" is not defined.']);
@@ -70,25 +70,25 @@ test('Build uses presets when defined and never touches the device', async () =>
 test('Build without presets configures an out-of-source directory with the project toolchain file', async () => {
   const p = await plan('stm32-cmake', { operation: 'build', profile: 'Release' });
   const root = dir('stm32-cmake');
-  assert.deepEqual(p.steps[0].args, ['-S', root, '-B', path.join(root, 'build', 'Release'), '-DCMAKE_BUILD_TYPE=Release', '-G', 'Ninja', `-DCMAKE_TOOLCHAIN_FILE=${path.join(root, 'cmake', 'gcc-arm-none-eabi.cmake')}`]);
+  assert.deepEqual(p.steps[0].args, ['-S', root, '-B', path.join(root, 'build', 'Release'), '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON', '-DCMAKE_BUILD_TYPE=Release', '-G', 'Ninja', `-DCMAKE_TOOLCHAIN_FILE=${path.join(root, 'cmake', 'gcc-arm-none-eabi.cmake')}`]);
   assert.deepEqual(p.steps[1].args, ['--build', path.join(root, 'build', 'Release')]);
 });
 
 test('Build reports missing tools and CubeMX-only projects instead of guessing', async () => {
   assert.equal((await plan('stm32-cmake', { operation: 'build', tools: {} })).blockers.length, 2);
-  assert.match((await plan('stm32-cubemx', { operation: 'build' })).blockers[0], /Generate.*CMake/i);
+  assert.match((await plan('stm32-cubemx', { operation: 'build' })).blockers[0], /生成 CMake/);
 });
 
 test('Flash needs firmware, probe and device; without them nothing is planned', async () => {
   const p = await plan('stm32-cmake', { operation: 'flash' });
-  assert.ok(p.blockers.some(b => /explicit firmware/.test(b))); assert.deepEqual(p.steps, []); assert.equal(p.risk, 'writes-device');
+  assert.ok(p.blockers.some(b => /firmware/.test(b))); assert.deepEqual(p.steps, []); assert.equal(p.risk, 'writes-device');
 });
 
 test('Flash plan programs and verifies only, names the target in the confirmation, and never erases', async () => {
   const p = await plan('stm32-cmake', { operation: 'flash', flash: { ...flash, probe: { interface: 'SWD', serial: '066DFF485750' } } });
   assert.deepEqual(p.blockers, []);
-  assert.deepEqual(p.steps[0].args, ['-c', 'port=SWD', 'sn=066DFF485750', '-w', '/p/build/Debug/app.elf', '-v', '-rst']);
-  assert.equal(p.steps[0].command, '/t/prog/bin/STM32_Programmer_CLI');
+  assert.deepEqual(p.steps[0].args, ['-f','interface/stlink.cfg','-c','transport select hla_swd','-f','target/stm32g0x.cfg','-c','adapter speed 4000','-c','adapter serial \"066DFF485750\"','-c','program \"/p/build/Debug/app.elf\" verify reset exit']);
+  assert.equal(p.steps[0].command, '/t/openocd');
   assert.match(p.confirm ?? '', /app\.elf to STM32G0B1RETx through ST-LINK.*No full-chip erase/);
   for (const bad of [['-e', 'all'], ['--erase'], ['-ob', 'RDP=0'], ['-rdu'], ['erase']]) {
     assert.ok((await plan('stm32-cmake', { operation: 'flash', flash, extraArgs: bad })).blockers.some(b => /not allowed/.test(b)), bad.join(' '));
@@ -100,24 +100,24 @@ test('Flash validates image type, .bin address and probe serial', async () => {
   assert.ok((await plan('stm32-cmake', { operation: 'flash', flash: { ...flash, firmware: '/p/a.txt' } })).blockers.some(b => /firmware image/.test(b)));
   assert.ok((await plan('stm32-cmake', { operation: 'flash', flash: { ...flash, firmware: '/p/a.bin' } })).blockers.some(b => /load address/.test(b)));
   const bin = await plan('stm32-cmake', { operation: 'flash', flash: { ...flash, firmware: '/p/a.bin', address: '0x08000000' } });
-  assert.deepEqual(bin.steps[0].args.slice(2, 5), ['-w', '/p/a.bin', '0x08000000']);
+  assert.equal(bin.steps[0].args.at(-1), 'program \"/p/a.bin\" verify reset exit 0x08000000');
   assert.ok((await plan('stm32-cmake', { operation: 'flash', flash: { ...flash, probe: { interface: 'SWD', serial: 'a b;rm' } } })).blockers.some(b => /serial/.test(b)));
   assert.ok((await plan('stm32-cmake', { operation: 'flash', flash: { ...flash, device: ' ' } })).blockers.some(b => /Confirm the target MCU/.test(b)));
 });
 
-test('Build, Flash and Debug are separate operations and nothing maps Run to flashing', () => {
+test('Build, Flash and Debug are separate operations and managed Run composes Build and Flash', () => {
   assert.deepEqual([...stm32Operations], ['build', 'flash', 'debug']);
   assert.ok(!(stm32Operations as readonly string[]).includes('run'));
 });
 
-test('Debug builds first, then launches Cortex-Debug with the ST-LINK server, and is blocked without prerequisites', async () => {
+test('Debug builds first, then launches Cortex-Debug with an owned OpenOCD server, and is blocked without prerequisites', async () => {
   const blocked = await plan('stm32-cubemx', { operation: 'debug', tools: {} });
   assert.ok(blocked.blockers.length >= 4);
   const p = await plan('stm32-cmake', { operation: 'debug', device: 'STM32G0B1RETx', cortexDebugInstalled: true });
   assert.deepEqual(p.blockers, []);
   assert.equal(p.steps.length, 2);
   assert.equal(p.debug?.extension, 'marus25.cortex-debug');
-  assert.deepEqual(p.debug?.configuration, { type: 'cortex-debug', request: 'launch', name: 'STM32 Debug (blink_g0)', servertype: 'stlink', cwd: dir('stm32-cmake'), executable: expectedElf((await readStm32Project(dir('stm32-cmake'), fsHost))!), device: 'STM32G0B1RETx', runToEntryPoint: 'main', gdbPath: '/t/arm/bin/arm-none-eabi-gdb', armToolchainPath: '/t/arm/bin', serverpath: '/t/gdb/bin/ST-LINK_gdbserver' });
+  assert.deepEqual(p.debug?.configuration, { type: 'cortex-debug', request: 'launch', name: 'STM32 Debug (blink_g0)', servertype: 'openocd', cwd: dir('stm32-cmake'), executable: expectedElf((await readStm32Project(dir('stm32-cmake'), fsHost))!), device: 'STM32G0B1RETx', runToEntryPoint: 'main', configFiles:['interface/stlink.cfg','target/stm32g0x.cfg'], gdbPath: '/t/arm/bin/arm-none-eabi-gdb', armToolchainPath: '/t/arm/bin', serverpath: '/t/openocd' });
   assert.equal(p.risk, 'writes-device');
   assert.ok((await plan('stm32-cmake', { operation: 'debug', cortexDebugInstalled: true })).blockers.some(b => /target MCU/.test(b)));
 });

@@ -3,7 +3,14 @@ import { languages, Language, RunnerError, RunPlan } from './model';
 export const runtimeLanguages = [...languages, 'node'] as const;
 export type RuntimeLanguage = Language | 'node';
 export type ConfigurationKind = 'file' | 'project' | 'module' | 'executable' | 'task' | 'launch';
+export const stm32StringFields = ['stm32Action','stm32Preset','stm32BuildBefore','stm32Probe','stm32Interface','stm32Target','stm32Transport','stm32Speed','stm32Port','stm32Load','stm32Main','stm32Elf','stm32Openocd','stm32Gdb','stm32Gcc'] as const;
+export const platformioStringFields = ["pioAction", "pioEnvironment", "pioUploadPort", "pioUploadProtocol", "pioBuildBefore", "pioMonitorAfter", "pioMonitorPort", "pioMonitorSpeed", "pioFilters", "pioDebugTool"] as const;
 export interface AtelierConfiguration {
+  pioAction: string; pioEnvironment: string; pioUploadPort: string; pioUploadProtocol: string; pioBuildBefore: string; pioMonitorAfter: string; pioMonitorPort: string; pioMonitorSpeed: string; pioFilters: string; pioDebugTool: string;
+  stm32Action: string; stm32Preset: string; stm32BuildBefore: string; stm32Probe: string;
+  stm32Interface: string; stm32Target: string; stm32Transport: string; stm32Speed: string;
+  stm32Port: string; stm32Load: string; stm32Main: string; stm32Elf: string;
+  stm32Openocd: string; stm32Gdb: string; stm32Gcc: string;
   id: string; name: string; templateId: string; language: RuntimeLanguage; kind: ConfigurationKind;
   target: string; cwd: string; toolchain: string; args: string[]; buildArgs: string[];
   env: Record<string, string>; preLaunchTask: string; terminal: boolean; autoActivate: boolean;
@@ -18,11 +25,11 @@ export interface ConfigurationFile { version: 1; default?: string; configuration
 export interface LocalToolchain { id: string; name: string; language: RuntimeLanguage; executable: string; version: string; manager: string; project: string; details?: string; rustToolchain?:string }
 export interface PreparedRun { plan: RunPlan; debug?: Record<string, unknown> }
 export type Selection = { kind: 'auto' | 'file' | 'project' | 'managed' | 'launch' | 'task' | 'test'; id?: string };
-const scalar = ['id','name','templateId','target','cwd','toolchain','preLaunchTask','standard','output','package','binary','example','rustToolchain','cargoTarget','script','framework','launchProfile','goToolchain','debugName','debugType'] as const;
+const scalar = [...platformioStringFields,...stm32StringFields,'id','name','templateId','target','cwd','toolchain','preLaunchTask','standard','output','package','binary','example','rustToolchain','cargoTarget','script','framework','launchProfile','goToolchain','debugName','debugType'] as const;
 const arrays = ['args','buildArgs','sources','includePaths','libraryPaths','linkArgs','features','classPath','modulePath'] as const;
 const fields = new Set<string>([...scalar, ...arrays, 'language','kind','env','terminal','autoActivate','operation','profile','packageManager','typescriptRunner']);
 export function newConfiguration(language: RuntimeLanguage, name = `${language} application`): AtelierConfiguration {
-  return { id: '', name, templateId: '', language, kind: 'file', target: '${file}', cwd: '${workspaceFolder}', toolchain: '', args: [], buildArgs: [], env: {}, preLaunchTask: '', terminal: true, autoActivate: true, operation: 'run', profile: 'debug', standard: '', sources: [], includePaths: [], libraryPaths: [], linkArgs: [], output: '', package: '', binary: '', example: '', features: [], rustToolchain: '', cargoTarget: '', packageManager: 'npm', script: '', typescriptRunner: 'tsx', framework: '', launchProfile: '', goToolchain: '', debugName: '', debugType: '', classPath: [], modulePath: [] };
+  return { pioAction: '', pioEnvironment: '', pioUploadPort: '', pioUploadProtocol: '', pioBuildBefore: 'true', pioMonitorAfter: 'false', pioMonitorPort: '', pioMonitorSpeed: '', pioFilters: '', pioDebugTool: '', stm32Action: '', stm32Preset: '', stm32BuildBefore: 'true', stm32Probe: '', stm32Interface: '', stm32Target: '', stm32Transport: 'swd', stm32Speed: '4000', stm32Port: '3333', stm32Load: 'true', stm32Main: 'true', stm32Elf: '', stm32Openocd: '', stm32Gdb: '', stm32Gcc: '', id: '', name, templateId: '', language, kind: 'file', target: '${file}', cwd: '${workspaceFolder}', toolchain: '', args: [], buildArgs: [], env: {}, preLaunchTask: '', terminal: true, autoActivate: true, operation: 'run', profile: 'debug', standard: '', sources: [], includePaths: [], libraryPaths: [], linkArgs: [], output: '', package: '', binary: '', example: '', features: [], rustToolchain: '', cargoTarget: '', packageManager: 'npm', script: '', typescriptRunner: 'tsx', framework: '', launchProfile: '', goToolchain: '', debugName: '', debugType: '', classPath: [], modulePath: [] };
 }
 export function validateFile(value: unknown): ConfigurationFile {
   const fail = (text: string): never => { throw new RunnerError(`Configuration: ${text}`, true); };
@@ -44,6 +51,11 @@ export function validateFile(value: unknown): ConfigurationFile {
     for (const key of arrays) { if (!Array.isArray(merged[key]) || merged[key].length > 500 || merged[key].some(v => typeof v !== 'string' || v.length > 8192 || v.includes('\0'))) { return fail(`${key} must be a string array.`); } }
     const enums = { kind: ['file','project','module','executable','task','launch'], operation: ['run','build','test'], profile: ['debug','release'], packageManager: ['npm','pnpm','yarn'], typescriptRunner: ['tsx','ts-node','tsc'] };
     for (const [key, values] of Object.entries(enums)) { if (!values.includes(String(merged[key as keyof AtelierConfiguration]))) { return fail(`invalid ${key}.`); } }
+    const pioEnums={pioAction:['','build','upload','debug','monitor','test','testOnDevice','clean'],pioBuildBefore:['true','false'],pioMonitorAfter:['true','false']};
+    for (const [key,values] of Object.entries(pioEnums)) if (!values.includes(String(merged[key as keyof AtelierConfiguration]))) return fail(`invalid ${key}.`);
+    if (merged.pioMonitorSpeed && (!/^\d+$/.test(merged.pioMonitorSpeed) || Number(merged.pioMonitorSpeed)<1)) return fail('串口波特率必须是正整数。');
+    const stm32Enums = { stm32Action:['','build','run','debug'], stm32BuildBefore:['true','false'], stm32Probe:['','stlink','jlink','cmsis-dap','custom'], stm32Transport:['swd','jtag'], stm32Load:['true','false'], stm32Main:['true','false'] };
+    for (const [key, values] of Object.entries(stm32Enums)) if (!values.includes(String(merged[key as keyof AtelierConfiguration]))) return fail(`invalid ${key}.`);
     if (typeof merged.terminal !== 'boolean' || typeof merged.autoActivate !== 'boolean') { return fail('terminal and autoActivate must be booleans.'); }
     if (!merged.env || typeof merged.env !== 'object' || Array.isArray(merged.env)) { return fail('env must be an object of environment/secret references.'); }
     for (const [key, ref] of Object.entries(merged.env)) {

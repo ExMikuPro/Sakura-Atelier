@@ -50,11 +50,13 @@
       },
       {
         "command": "sakuraAtelier.embedded.platformio.selectEnvironment",
-        "title": "%command.sakuraAtelier.embedded.platformio.selectEnvironment%"
+        "title": "%command.sakuraAtelier.embedded.platformio.selectEnvironment%",
+        "icon": "$(list-selection)"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.build",
-        "title": "%command.sakuraAtelier.embedded.platformio.build%"
+        "title": "%command.sakuraAtelier.embedded.platformio.build%",
+        "icon": "$(build)"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.clean",
@@ -62,15 +64,18 @@
       },
       {
         "command": "sakuraAtelier.embedded.platformio.upload",
-        "title": "%command.sakuraAtelier.embedded.platformio.upload%"
+        "title": "%command.sakuraAtelier.embedded.platformio.upload%",
+        "icon": "$(play)"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.debug",
-        "title": "%command.sakuraAtelier.embedded.platformio.debug%"
+        "title": "%command.sakuraAtelier.embedded.platformio.debug%",
+        "icon": "$(debug-alt)"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.monitor",
-        "title": "%command.sakuraAtelier.embedded.platformio.monitor%"
+        "title": "%command.sakuraAtelier.embedded.platformio.monitor%",
+        "icon": "$(terminal)"
       },
       {
         "command": "sakuraAtelier.embedded.platformio.test",
@@ -90,7 +95,8 @@
       },
       {
         "command": "sakuraAtelier.embedded.stm32.build",
-        "title": "%command.sakuraAtelier.embedded.stm32.build%"
+        "title": "%command.sakuraAtelier.embedded.stm32.build%",
+        "icon": "$(build)"
       },
       {
         "command": "sakuraAtelier.embedded.stm32.flash",
@@ -98,7 +104,8 @@
       },
       {
         "command": "sakuraAtelier.embedded.stm32.debug",
-        "title": "%command.sakuraAtelier.embedded.stm32.debug%"
+        "title": "%command.sakuraAtelier.embedded.stm32.debug%",
+        "icon": "$(debug-alt)"
       },
       {
         "command": "sakuraAtelier.embedded.reloadDevices",
@@ -295,49 +302,150 @@
         "command": "sakuraAtelier.checkProjectDependencies",
         "title": "%command.checkProjectDependencies%",
         "icon": "$(package)"
+      },
+      {
+        "command": "sakuraAtelier.embedded.stm32.run",
+        "title": "%command.sakuraAtelier.embedded.stm32.run%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.stopMonitor",
+        "title": "%command.sakuraAtelier.embedded.platformio.stopMonitor%",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.refreshConfigurations",
+        "title": "%command.sakuraAtelier.embedded.platformio.refreshConfigurations%"
+      },
+      {
+        "command": "sakuraAtelier.embedded.platformio.refreshIntelliSense",
+        "title": "%command.sakuraAtelier.embedded.platformio.refreshIntelliSense%"
+      },
+      {
+        "command": "sakuraAtelier.build",
+        "title": "%command.sakuraAtelier.build%",
+        "icon": "$(build)"
+      },
+      {
+        "command": "sakuraAtelier.python.recreateEnvironment",
+        "title": "%command.sakuraAtelier.python.recreateEnvironment%"
+      },
+      {
+        "command": "sakuraAtelier.java.configureBuildTools",
+        "title": "%command.sakuraAtelier.java.configureBuildTools%"
       }
     ],
     "menus": {
       "editor/title": [
         {
           "command": "sakuraAtelier.run",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@1"
         },
         {
           "command": "sakuraAtelier.debug",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@2"
         },
         {
           "command": "sakuraAtelier.selectConfiguration",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && !sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@3"
         },
         {
           "command": "sakuraAtelier.stop",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)) && !sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)) && !sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@4"
         },
         {
           "command": "sakuraAtelier.english.run",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@1"
         },
         {
           "command": "sakuraAtelier.english.debug",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@2"
         },
         {
           "command": "sakuraAtelier.english.selectConfiguration",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/) && sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@3"
         },
         {
           "command": "sakuraAtelier.english.stop",
-          "when": "(resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)) && sakuraAtelier.uiEnglish",
+          "when": "((resourceScheme == file && editorLangId =~ /^(go|python|rust|c|cpp|csharp|java|javascript|javascriptreact|typescript|typescriptreact)$/ && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning)) && sakuraAtelier.uiEnglish) && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
           "group": "navigation@4"
+        },
+        {
+          "command": "sakuraAtelier.embedded.stm32.build",
+          "when": "sakuraAtelier.stm32Editor",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sakuraAtelier.embedded.stm32.run",
+          "when": "sakuraAtelier.stm32Editor",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sakuraAtelier.embedded.stm32.debug",
+          "when": "sakuraAtelier.stm32Editor",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sakuraAtelier.selectConfiguration",
+          "when": "sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
+          "group": "navigation@4"
+        },
+        {
+          "command": "sakuraAtelier.stop",
+          "when": "sakuraAtelier.stm32Editor && (sakuraAtelier.debugRunning || sakuraAtelier.runRunning) && !sakuraAtelier.platformioEditor",
+          "group": "navigation@5"
+        },
+        {
+          "command": "sakuraAtelier.embedded.platformio.build",
+          "when": "sakuraAtelier.platformioEditor",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sakuraAtelier.embedded.platformio.upload",
+          "when": "sakuraAtelier.platformioEditor",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sakuraAtelier.embedded.platformio.debug",
+          "when": "sakuraAtelier.platformioEditor",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sakuraAtelier.embedded.platformio.monitor",
+          "when": "sakuraAtelier.platformioEditor",
+          "group": "navigation@4"
+        },
+        {
+          "command": "sakuraAtelier.embedded.platformio.selectEnvironment",
+          "when": "sakuraAtelier.platformioEditor",
+          "group": "navigation@5"
+        },
+        {
+          "command": "sakuraAtelier.selectConfiguration",
+          "when": "sakuraAtelier.platformioEditor",
+          "group": "navigation@6"
+        },
+        {
+          "command": "sakuraAtelier.stop",
+          "when": "sakuraAtelier.platformioEditor && (sakuraAtelier.runRunning || sakuraAtelier.debugRunning)",
+          "group": "navigation@7"
+        },
+        {
+          "command": "sakuraAtelier.embedded.platformio.stopMonitor",
+          "when": "sakuraAtelier.platformioEditor && sakuraAtelier.monitorRunning",
+          "group": "navigation@8"
+        },
+        {
+          "command": "sakuraAtelier.build",
+          "when": "sakuraAtelier.languageProjectBuild && !sakuraAtelier.stm32Editor && !sakuraAtelier.platformioEditor",
+          "group": "navigation@0"
         }
       ],
       "commandPalette": [
@@ -612,6 +720,18 @@
             "%enum.sakuraAtelier.language.2%"
           ],
           "description": "%setting.sakuraAtelier.language%"
+        },
+        "sakuraAtelier.stm32.autoIntelliSense": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "%setting.sakuraAtelier.stm32.autoIntelliSense%"
+        },
+        "sakuraAtelier.platformio.autoIntelliSense": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "%setting.sakuraAtelier.platformio.autoIntelliSense%"
         }
       }
     },
@@ -646,7 +766,7 @@
             "filenamePattern": "*.ioc"
           }
         ],
-        "priority": "default"
+        "priority": "option"
       }
     ]
   },
@@ -658,7 +778,12 @@
     "package": "npm run compile && vsce package --no-dependencies --baseContentUrl https://github.com/ExMikuPro/Sakura-Atelier/blob/dev/ --baseImagesUrl https://github.com/ExMikuPro/Sakura-Atelier/raw/dev/ --out sakura-atelier-0.1.0.vsix && node scripts/verify-package.cjs",
     "test:ui": "npm run compile && playwright test",
     "test:wizard": "npm run compile && node scripts/wizard-integration.cjs",
-    "test:projects": "npm run compile && node scripts/projects-integration.cjs"
+    "test:projects": "npm run compile && node scripts/projects-integration.cjs",
+    "test:stm32-intellisense": "npm run compile && node scripts/stm32-intellisense-integration.cjs",
+    "test:platformio": "npm run compile && node scripts/platformio-integration.cjs",
+    "test:platformio-intellisense": "npm run compile && node scripts/platformio-intellisense-integration.cjs",
+    "test:language-projects": "npm run compile && node scripts/language-projects-integration.cjs",
+    "test:language-debug": "npm run compile && node scripts/language-debug-integration.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

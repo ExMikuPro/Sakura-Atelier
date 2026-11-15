@@ -51,7 +51,7 @@ export function sanitizeState(raw: unknown, known: (id: string) => boolean): Wiz
 }
 
 export type WizardMessage =
-  | { type: 'ready' | 'browse' | 'create' | 'reload' | 'clearRecents' | 'toggleTemplateFavorite' | 'cancel' | 'locateTools' }
+  | { type: 'ready' | 'browse' | 'create' | 'reload' | 'clearRecents' | 'toggleTemplateFavorite' | 'cancel' | 'locateTools' | 'configureJavaTools' }
   | { type: 'selectTemplate' | 'applyFavorite' | 'removeFavoriteTemplate'; id: string }
   | { type: 'section'; id: DeviceSection } | { type: 'search' | 'framework' | 'name'; value: string }
   | { type: 'option'; key: string; value: string | boolean }
@@ -63,11 +63,11 @@ export function parseMessage(raw: unknown): WizardMessage | undefined {
   if (!raw || typeof raw !== 'object') { return undefined; }
   const m = raw as Record<string, unknown>; const str = (v: unknown, max = 200) => typeof v === 'string' && v.length <= max && !/[\0\r\n]/.test(v) ? v : undefined;
   switch (m.type) {
-    case 'ready': case 'browse': case 'create': case 'reload': case 'clearRecents': case 'toggleTemplateFavorite': case 'cancel': case 'locateTools': return { type: m.type };
+    case 'ready': case 'browse': case 'create': case 'reload': case 'clearRecents': case 'toggleTemplateFavorite': case 'cancel': case 'locateTools': case 'configureJavaTools': return { type: m.type };
     case 'selectTemplate': case 'applyFavorite': case 'removeFavoriteTemplate': { const id = str(m.id, 80); return id ? { type: m.type, id } : undefined; }
     case 'section': return (deviceSections as readonly unknown[]).includes(m.id) ? { type: 'section', id: m.id as DeviceSection } : undefined;
     case 'search': case 'framework': case 'name': { const value = str(m.value, m.type === 'search' ? 100 : 64); return value !== undefined ? { type: m.type, value } : undefined; }
-    case 'option': { const key = str(m.key, 40); return key && (typeof m.value === 'boolean' || str(m.value, 20) !== undefined) ? { type: 'option', key, value: m.value as string | boolean } : undefined; }
+    case 'option': { const key = str(m.key, 40); return key && (typeof m.value === 'boolean' || str(m.value, 2000) !== undefined) ? { type: 'option', key, value: m.value as string | boolean } : undefined; }
     case 'toggleFavorite': case 'selectDevice': { const ref = normalizeRef(m.ref); return ref ? { type: m.type, ref, name: cleanName(m.name, ref.id) } : undefined; }
     case 'addManual': return (m.kind === 'stm32-mcu' || m.kind === 'stm32-board') && str(m.text, 60) ? { type: 'addManual', kind: m.kind, text: m.text as string } : undefined;
     default: return undefined;
@@ -76,6 +76,7 @@ export function parseMessage(raw: unknown): WizardMessage | undefined {
 
 export interface WizardView {
   language: UiLanguage; labels: Record<string, string>;
+  languageProject?: {language:string; sdks:{id:string;name:string;version:string}[];managers:string[]};
   needsDevice: boolean; projectFiles: string[]; description: string; catalogNote?: string;
   templates: { id: string; label: string; description: string; icon: string; selected: boolean; category: 'general' | 'embedded' }[];
   favoriteTemplates: { id: string; name: string; problems: { text: string; fix: string }[] }[];
@@ -181,7 +182,7 @@ export class WizardModel {
     const listMessage = !this.deps.loaded() ? t('Loading devices...') : rows.length ? '' : s.query ? t('No matching devices') : section === 'favorites' ? t('No favorites yet. Click the star next to a device.') : section === 'recent' ? t('No recent devices. Devices are recorded after a project is created.') : t('No matching devices');
     const hasDevice = !!s.device; const hasFramework = !template?.needsFramework || !!s.framework;
     const view: WizardView = {
-      needsDevice: kinds.length > 0, projectFiles: template?.backend === 'general' ? plan.preview.slice(2) : [], description: t(template?.description ?? ''),
+      needsDevice: kinds.length > 0, projectFiles: template?.language==='java' ? [s.options.javaBuild?.startsWith('gradle')?'build.gradle / settings.gradle / gradlew / gradle/wrapper':'pom.xml / mvnw / .mvn/wrapper','src/main/java/…','src/test/java/…','.vscode/sakura-atelier.json'] : template?.backend === 'general' ? plan.preview.slice(2).filter(line=>!line.startsWith('初始化依赖')) : [], description: t(template?.description ?? ''),
       ...(template?.backend === 'stm32' && kinds.length ? { catalogNote: t(snapshot.devices.some(accepts) ? 'STM32 devices come from your local STM32CubeMX database and workspace .ioc files.' : 'No STM32 devices loaded. Locate STM32CubeMX, then reload devices, or enter a part number manually.') } : {}),
       language, labels: Object.fromEntries(wizardLabelKeys.map(k => [k, t(k)])),
       templates: this.deps.projectTemplates.values().map(p => ({ id: p.id, label: t(p.label), description: t(p.description), icon: p.icon, selected: p.id === s.templateId, category: p.backend === 'general' ? 'general' as const : 'embedded' as const })),
@@ -198,6 +199,7 @@ export class WizardModel {
       })),
       ...(s.device ? { device: { kind: s.device.kind, id: s.device.id, name: s.device.name, subtitle: [board?.vendor, board?.mcu, board?.platform].filter(Boolean).join(' · ') } } : {}),
       needsFramework: !!template?.needsFramework, frameworks: board?.frameworks ?? [], framework: s.framework,
+      ...(template?.language && ['python','typescript','java'].includes(template.language) ? {languageProject:{language:template.language,sdks:(ctx.sdkChoices || []).filter(t=>t.language===runtimeForProject(template.language!)).map(t=>({id:t.id,name:t.name,version:t.version})),managers:template.language==='python'?['pip',...(ctx.tools.uv?['uv']:[])]:template.language==='typescript'?['npm',...(ctx.tools.pnpm?['pnpm']:[])]:['maven','gradle-groovy','gradle-kotlin']}} : {}),
       options: s.options, generator: template?.buildSystem === 'cubemx' ? ['cmake', 'makefile', 'cubeide'] : [],
       tools: [
         ...(template?.language ? [{ label: projectLanguages.find(p => p.language === template.language)?.sdk ?? template.language, found: !!ctx.tools.runtimes?.[runtimeForProject(template.language)], path: ctx.tools.runtimes?.[runtimeForProject(template.language)] }] : []),
@@ -214,7 +216,7 @@ export class WizardModel {
         { label: t('Check the SDK and toolchain'), done: template?.language ? !!ctx.tools.runtimes?.[runtimeForProject(template.language)] : template?.backend === 'platformio' ? !!ctx.tools.pio : template?.backend === 'stm32' ? !!ctx.tools.cubemx && !!ctx.tools.cmake && !!ctx.tools.armGcc : true },
         { label: t('Name and location'), done: !!s.name && !nameProblem && !!s.parentDir }, { label: t('Preview and create'), done: !plan.blockers.length && !!s.name && !!s.parentDir }
       ],
-      blockers: shown.map(b => t(`blocker.${b.code}`)),
+      blockers: shown.map(b => b.code==='initialization' ? b.message : t(`blocker.${b.code}`)),
       warnings: plan.warnings.map(w => t(`warning.${w.code}`)), preview: plan.preview,
       canCreate: !plan.blockers.length && plan.steps.length > 0 && (template?.buildSystem === 'existing' || (!!s.name && !!s.parentDir)),
       templateFavorite: { saved: this.deps.templates.isFavorite(this.templateInput()), can: template?.backend === 'general' || (!!s.device && hasFramework) },

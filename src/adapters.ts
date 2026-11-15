@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import {nodeManagerStep} from './languageProjects/nodeManager';
+import {javaProjectPlan,javaProjectDebugPlan} from './languageProjects/javaRuntime';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -90,6 +92,7 @@ async function build(c: Configuration, ctx: AdapterContext, debug = false): Prom
     }
     case 'javascript': case 'javascriptreact': case 'typescript': case 'typescriptreact': case 'node': {
       const node = await resolveTool(tool || 'node', cwd);
+      if(c.templateId==='typescript.project' && c.script)return {plan:{name:c.name,steps:[await nodeManagerStep(node,c.packageManager==='pnpm'?'pnpm':'npm',['run',c.operation==='build'?'build':c.script,...(c.args.length?['--',...c.args]:[])],cwd)]}};
       if (c.script) { return { plan: { name: c.name, steps: [await packageScript(c, ctx, node)] } }; }
       if (['typescript','typescriptreact'].includes(c.language)) {
         const roots = [...new Set([ctx.root, ctx.folder.uri.fsPath])];
@@ -145,6 +148,7 @@ async function build(c: Configuration, ctx: AdapterContext, debug = false): Prom
       return single(command,args);
     }
     case 'java': {
+      if(c.templateId==='java.project')return {plan:await javaProjectPlan(c,ctx)};
       const command = await resolveTool(tool || 'java',cwd);
       return single(command,[...(c.classPath.length ? ['--class-path',c.classPath.map(p=>resolveFrom(cwd,p)).join(path.delimiter)] : []), ...(c.modulePath.length ? ['--module-path',c.modulePath.map(p=>resolveFrom(cwd,p)).join(path.delimiter)] : []), ...c.buildArgs, c.kind === 'file' ? resolveFrom(cwd,target) : target, ...c.args]);
     }
@@ -165,6 +169,7 @@ async function debugPlan(c: Configuration, ctx: AdapterContext, type: string): P
       return { configuration: { ...configuration, mode: 'auto', program: c.kind === 'file' ? resolveFrom(cwd,target) : resolveFrom(cwd,target || '.'), dlvToolPath:delve, buildFlags: c.buildArgs.map(a=>/\s/.test(a)?JSON.stringify(a):a).join(' '), goExecPath: go }, build: [] };
     }
     case 'javascript': case 'node': case 'javascriptreact': case 'typescript': case 'typescriptreact': {
+      if(c.templateId==='typescript.project' && c.script)return debugPlan({...c,script:''},ctx,type);
       if (c.script) { throw new RunnerError('Debug a package script through an existing JavaScript launch configuration, so its actual entry and child-process behavior stay under user control.', true); }
       const base = { ...configuration, program: resolveFrom(cwd,target), runtimeExecutable: ctx.toolchain || await resolveTool('node',cwd), console: c.terminal ? 'integratedTerminal' : 'internalConsole', sourceMaps: true, skipFiles: ['<node_internals>/**'] };
       if (['typescript','typescriptreact'].includes(c.language)) {
@@ -194,7 +199,9 @@ async function debugPlan(c: Configuration, ctx: AdapterContext, type: string): P
       let host=await resolveTool('node',cwd).catch(()=>process.execPath);if(host===process.execPath&&process.platform==='darwin'){const bin=path.resolve(vscode.env.appRoot,'../../MacOS');host=path.join(bin,(await fs.readdir(bin))[0]);}
       return { configuration: { ...configuration, program: '${cargoArtifact}' }, build: [{ ...compile, command: host, args: [wrapper,compile.command,artifactFile, ...compile.args,'--message-format=json'], env: { ...ctx.environment,ELECTRON_RUN_AS_NODE: '1' } }], artifactFile };
     }
-    case 'csharp': case 'java': throw new RunnerError(`${c.language} debugging needs an existing launch.json configuration to identify the built assembly/main class. Set Debug Configuration in this run configuration.`,true);
+    case 'java': if(c.templateId==='java.project')return javaProjectDebugPlan(c,ctx,type);
+    // Existing single-file Java and C# debugging contracts stay unchanged.
+    case 'csharp': throw new RunnerError(`${c.language} debugging needs an existing launch.json configuration to identify the built assembly/main class. Set Debug Configuration in this run configuration.`,true);
   }
 }
 async function propose(language: RuntimeLanguage, ctx: AdapterContext): Promise<Configuration[]> {

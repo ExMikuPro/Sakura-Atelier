@@ -29,7 +29,7 @@ test('untrusted workspaces and a missing CubeMX disable launch with a reason', (
 
 test('page shows file name, MCU, CubeMX status and the two required buttons in Chinese', () => {
   const html = page();
-  for (const text of ['a b.ioc', 'STM32G0B1RETx', 'STM32G0B1RET6', '已安装', '使用 STM32CubeMX 打开', '作为文本打开', '手动定位 STM32CubeMX…', '只有点击']) { assert.ok(html.includes(text), text); }
+  for (const text of ['a b.ioc', 'STM32G0B1RETx', 'STM32G0B1RET6', '已安装', '使用 STM32CubeMX 打开', '作为文本打开', '手动定位 STM32CubeMX…', '只有主动']) { assert.ok(html.includes(text), text); }
   assert.ok(!/id="open-cubemx" disabled/.test(html));
 });
 
@@ -66,10 +66,10 @@ test('every translated entry keeps its placeholders', () => {
   for (const [key, value] of Object.entries(embeddedChinese)) { assert.deepEqual(key.match(/\{\d+\}/g) ?? [], value.match(/\{\d+\}/g) ?? [], key); }
 });
 
-test('the manifest contributes the .ioc custom editor as a read-only default editor, and nothing launches on open', () => {
+test('the manifest contributes the .ioc custom editor as a read-only optional editor, and nothing launches on open', () => {
   const manifest = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
   const editor = manifest.contributes.customEditors.find((e: { viewType: string }) => e.viewType === 'sakuraAtelier.iocViewer');
-  assert.deepEqual(editor.selector, [{ filenamePattern: '*.ioc' }]); assert.equal(editor.priority, 'default');
+  assert.deepEqual(editor.selector, [{ filenamePattern: '*.ioc' }]); assert.equal(editor.priority, 'option');
   const source = fs.readFileSync(path.resolve(__dirname, '../../src/embedded/stm32/iocEditor.ts'), 'utf8');
   assert.match(source, /implements vscode\.CustomReadonlyEditorProvider/);
   // spawn appears only in the message handler for the click, never in open/resolve setup.

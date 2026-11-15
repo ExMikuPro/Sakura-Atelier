@@ -3,14 +3,14 @@ import type { BackendHost, BackendProject, ProjectBackend } from '../../adapterT
 import { PlatformioIni, defaultEnvironments, environmentNames, environmentOption, parsePlatformioIni } from './ini';
 
 export type PlatformFamily = 'stm32' | 'native' | 'other';
-export interface PlatformioEnvironment { name: string; platform: string; board: string; framework: string; family: PlatformFamily }
-export interface PlatformioProject { root: string; ini: string; environments: PlatformioEnvironment[]; defaultEnvironments: string[] }
+export interface PlatformioEnvironment { name: string; platform: string; board: string; framework: string; family: PlatformFamily; options?: Record<string,string> }
+export interface PlatformioProject { srcDir?: string; resolved?: boolean; root: string; ini: string; environments: PlatformioEnvironment[]; defaultEnvironments: string[] }
 
 /** `ststm32`, `ststm32@^17`, or the platform's repository URL. */
 export function platformFamily(platform: string): PlatformFamily {
   const value = platform.trim().toLowerCase();
   if (!value) { return 'other'; }
-  if (value === 'native' || value.startsWith('native@')) { return 'native'; }
+  if (value === 'native' || value.startsWith('native@') || /(?:^|\/)platform(?:io)?-?native(?:[.@#]|$)/.test(value) || value.startsWith('platformio/native')) { return 'native'; }
   if (/(^|[/])(platform-)?ststm32([@.#]|$)/.test(value) || value === 'ststm32') { return 'stm32'; }
   return 'other';
 }
@@ -18,7 +18,7 @@ export function platformFamily(platform: string): PlatformFamily {
 export function describeEnvironments(ini: PlatformioIni): PlatformioEnvironment[] {
   return environmentNames(ini).map(name => {
     const platform = environmentOption(ini, name, 'platform') ?? '';
-    return { name, platform, board: environmentOption(ini, name, 'board') ?? '', framework: environmentOption(ini, name, 'framework') ?? '', family: platformFamily(platform) };
+    return { name, platform, board: environmentOption(ini, name, 'board') ?? '', framework: environmentOption(ini, name, 'framework') ?? '', family: platformFamily(platform), options: Object.fromEntries(['upload_protocol','upload_port','monitor_port','monitor_speed','monitor_filters','debug_tool','build_type','targets'].map(key=>[key, environmentOption(ini,name,key) ?? ''])) };
   });
 }
 
@@ -46,3 +46,13 @@ export const platformioBackend: ProjectBackend = {
     };
   }
 };
+
+/** Nearest PlatformIO build entry wins over generated CMake/IOC files. Metadata only. */
+export async function nearestPlatformioRoot(file: string, workspace: string, host: BackendHost): Promise<string | undefined> {
+  for (let dir=path.dirname(file);;dir=path.dirname(dir)) {
+    const relative=path.relative(workspace,dir);
+    if (relative === '..' || relative.startsWith('..'+path.sep) || path.isAbsolute(relative)) return undefined;
+    if ((await host.readDir(dir)).includes('platformio.ini')) return dir;
+    if (dir === workspace || path.dirname(dir) === dir) return undefined;
+  }
+}

@@ -716,3 +716,57 @@ test('SDK discovery completing before the initial editor state cannot crash the 
   await page.getByRole('treeitem', { name: '总览', exact: true }).click();
   await expect(page.locator('#main .environment-table tr')).toHaveCount(8);
 });
+
+test('STM32 settings show three Chinese sections and autosave local tool choices without sharing absolute paths', async ({page}) => {
+  const {stm32Configurations}=require('../../out/src/embedded/stm32/configurations');
+  const c=stm32Configurations({root:folders[0].uri.fsPath,projectName:'f407',buildSystem:'cmake',marker:'CMakeLists.txt',presets:['Debug'],ioc:{info:{mcu:'STM32F407ZET6'}}},folders[0].uri.fsPath)[1];
+  const current=await store.read(folders[0]);
+  await store.save(folders[0],{version:1,default:c.id,configurations:[c]},current.revision);
+  await page.reload(); await expect(page.locator('#field-stm32Port')).toBeVisible();
+  const snapshot=await state();
+  snapshot.embeddedTools={openocd:{candidates:[{path:'/opt/homebrew/bin/openocd'}]},'arm-gdb':{candidates:[{path:'/opt/homebrew/bin/arm-none-eabi-gdb'}]},'arm-gcc':{candidates:[{path:'/opt/homebrew/bin/arm-none-eabi-gcc'}]}};
+  await page.evaluate(data=>window.dispatchEvent(new MessageEvent('message',{data})),snapshot);
+  for(const name of ['构建设置','烧录设置','OpenOCD 调试设置'])await expect(page.getByRole('heading',{name,exact:true})).toBeVisible();
+  await page.locator('#field-stm32Probe').selectOption('stlink');
+  await page.locator('#field-stm32Interface').fill('interface/stlink.cfg');
+  await page.locator('#field-stm32Openocd').selectOption('/opt/homebrew/bin/openocd');
+  await page.locator('#field-stm32Port').fill('4444');
+  await page.locator('#field-stm32Main').selectOption('false');
+  await saved(page);
+  await expect.poll(async()=> (await store.read(folders[0])).document.configurations[0].stm32Port).toBe('4444');
+  const stored=(await store.read(folders[0])).document.configurations[0];
+  expect(stored.stm32Main).toBe('false');expect(stored.stm32Target).toBe('target/stm32f4x.cfg');
+  expect(stored.stm32Openocd).toMatch(/^\$\{localPath:/);
+  const shared=await fs.readFile(path.join(folders[0].uri.fsPath,'.vscode/sakura-atelier.json'),'utf8');
+  expect(shared).not.toContain('/opt/homebrew/bin/openocd');
+  await page.reload();await expect(page.locator('#field-stm32Port')).toHaveValue('4444');
+  await page.screenshot({path:path.join(os.tmpdir(),'sakura-stm32-settings.png'),fullPage:false});
+  await page.locator('#field-stm32Port').scrollIntoViewIfNeeded();
+  await page.screenshot({path:path.join(os.tmpdir(),'sakura-stm32-debug-settings.png'),fullPage:false});
+  await page.setViewportSize({width:720,height:900});
+  await expect(page.locator('#field-stm32Port')).toBeVisible();
+  await expect(page.locator('#field-stm32Port')).toHaveValue('4444');
+});
+
+test('PlatformIO settings display resolved board metadata and autosave a shared environment across actions', async ({page}) => {
+  const {mergePlatformioConfigurations}=require('../../out/src/embedded/platformio/configurations');
+  const project={root:path.join(folders[0].uri.fsPath,'firmware'),ini:'platformio.ini',defaultEnvironments:[],environments:[{name:'esp32dev',platform:'espressif32',board:'esp32dev',framework:'arduino',family:'other',options:{monitor_speed:'115200'}},{name:'nucleo',platform:'ststm32',board:'nucleo_f401re',framework:'stm32cube',family:'stm32',options:{debug_tool:'stlink'}}]};
+  const document=mergePlatformioConfigurations({version:1,configurations:[]},[project],folders[0].uri.fsPath);
+  document.default=document.configurations[1].id;
+  await store.save(folders[0],document,(await store.read(folders[0])).revision);
+  await page.reload();await expect(page.locator('#field-pioEnvironment')).toBeVisible();
+  const snapshot=await state();snapshot.platformioProjects=[project];snapshot.workspacePath=folders[0].uri.fsPath;
+  await page.evaluate(data=>window.dispatchEvent(new MessageEvent('message',{data})),snapshot);
+  for(const name of ['构建','上传','调试','串口']) await expect(page.getByRole('heading',{name,exact:true})).toBeVisible();
+  await page.locator('#field-pioEnvironment').selectOption('nucleo');
+  await expect(page.getByText('Board：nucleo_f401re · Platform：ststm32 · Framework：stm32cube',{exact:true})).toBeVisible();
+  await page.locator('#field-pioUploadPort').fill('/dev/tty.mock');
+  await page.locator('#field-pioMonitorAfter').selectOption('true');
+  await saved(page);
+  await expect.poll(async()=> (await store.read(folders[0])).document.configurations.every(c=>c.pioEnvironment==='nucleo')).toBe(true);
+  const persisted=(await store.read(folders[0])).document;
+  expect(persisted.configurations[1].pioUploadPort).toBe('/dev/tty.mock');
+  expect(persisted.configurations[1].pioMonitorAfter).toBe('true');
+  await page.reload();await expect(page.locator('#field-pioEnvironment')).toHaveValue('nucleo');
+  await page.screenshot({path:path.join(os.tmpdir(),'sakura-platformio-settings.png'),fullPage:true});
+});

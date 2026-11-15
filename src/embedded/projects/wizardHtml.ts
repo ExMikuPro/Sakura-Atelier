@@ -145,6 +145,36 @@ function renderDetail() {
     d.append(el('div', { class: 'field' }, el('label', { for: 'speed' }, L('Monitor speed')), el('input', { id: 'speed', type: 'text', inputmode: 'numeric', value: view.options.monitorSpeed || '', placeholder: '115200', on: { input: e => send({ type: 'option', key: 'monitorSpeed', value: e.target.value }) } })));
     d.append(el('div', { class: 'field inline' }, el('input', { id: 'sample', type: 'checkbox', checked: !!view.options.sampleCode, on: { change: e => send({ type: 'option', key: 'sampleCode', value: e.target.checked }) } }), el('label', { for: 'sample' }, L('Include sample code'))));
   }
+  if(view.languageProject){
+    const project=view.languageProject;
+    const selectField=(id,label,choices,current)=>d.append(el('div',{class:'field'},el('label',{for:id},label),el('select',{id,'aria-label':label,on:{change:e=>send({type:'option',key:id,value:e.target.value})}},choices.map(choice=>el('option',{value:choice.id,selected:choice.id===current},choice.name)))));
+    const textField=(id,label,current)=>d.append(el('div',{class:'field'},el('label',{for:id},label),el('input',{id,'aria-label':label,value:current,on:{input:e=>send({type:'option',key:id,value:e.target.value})}})));
+    selectField('sdkId','项目 SDK',[{id:'',name:'自动选择已发现的 SDK'},...project.sdks.map(s=>({id:s.id,name:s.name+' · '+s.version}))],view.options.sdkId || '');
+    if(project.language==='python')selectField('pythonManager','依赖管理',project.managers.map(id=>({id,name:id})),view.options.pythonManager || 'pip');
+    if(project.language==='typescript')selectField('nodeManager','包管理器',project.managers.map(id=>({id,name:id})),view.options.nodeManager || 'npm');
+    if(project.language==='java'){
+      selectField('javaFramework','项目类型',[{id:'application',name:'Java Application'},{id:'spring-boot',name:'Spring Boot Application'}],view.options.javaFramework || 'application');
+      const spring=view.options.javaFramework==='spring-boot';
+      const builds=[{id:'maven',name:'Maven',official:'maven-project'},{id:'gradle-groovy',name:'Gradle（Groovy）',official:'gradle-project'},{id:'gradle-kotlin',name:'Gradle（Kotlin）',official:'gradle-project-kotlin'}].filter(b=>!spring || view.spring?.builds.some(v=>v.id===b.official));
+      selectField('javaBuild','构建工具',builds,view.options.javaBuild || 'maven');
+      d.append(el('button',{class:'btn secondary',type:'button',on:{click:()=>send({type:'configureJavaTools'})}},'一键配置 Maven / Gradle / Wrapper'));
+      if(spring){
+        if(view.springLoading)d.append(el('p',{class:'sub'},'正在读取官方框架元数据…'));
+        if(view.spring){selectField('frameworkVersion','Spring Boot 版本',view.spring.bootVersions,view.options.frameworkVersion);selectField('javaVersion','Java 版本',view.spring.javaVersions,view.options.javaVersion);}
+      }else textField('javaVersion','Java 版本',view.options.javaVersion || '17');
+      textField('groupId','Group ID',view.options.groupId || 'com.example');
+      textField('artifactId','Artifact ID',view.options.artifactId || view.name || 'app');
+      textField('packageName','Package Name',view.options.packageName || 'com.example.app');
+      textField('projectVersion','项目版本',view.options.projectVersion || (spring?'0.0.1-SNAPSHOT':'1.0-SNAPSHOT'));
+      textField('description','项目描述',view.options.description || view.name || '');
+      if(spring && view.spring){
+        const search=el('input',{id:'dependency-search','aria-label':'搜索框架依赖',placeholder:'搜索框架依赖'});
+        const dependencies=el('div',{});const chosen=new Set((view.options.dependencies || '').split(',').filter(Boolean));
+        const renderDependencies=()=>{dependencies.replaceChildren(...view.spring.dependencies.filter(dep=>(dep.name+' '+dep.id).toLowerCase().includes(search.value.toLowerCase())).map(dep=>el('label',{class:'field inline'},el('input',{type:'checkbox',checked:chosen.has(dep.id),on:{change:e=>{if(e.target.checked)chosen.add(dep.id);else chosen.delete(dep.id);send({type:'option',key:'dependencies',value:[...chosen].join(',')});}}}),dep.name)));};
+        search.addEventListener('input',renderDependencies);renderDependencies();d.append(el('h2',{},'框架依赖'),search,dependencies);
+      }
+    }
+  }
   d.append(el('div', { class: 'card' }, el('div', { class: 'sub' }, L('SDK and toolchain')), view.tools.map(t => el('div', {}, icon(t.found ? 'pass' : 'warning'), ' ' + t.label + ' ', el('span', { class: t.found ? 'ok' : 'warn' }, t.found ? L('Found') : L('Not found')), t.path ? el('div', { class: 'sub' }, t.path) : null, t.found ? null : el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'locateTools' }) } }, L('Locate...'))))));
   d.append(el('div', { class: 'field' }, el('label', { for: 'name' }, L('Project name')), el('input', { id: 'name', type: 'text', value: view.name, on: { input: e => send({ type: 'name', value: e.target.value }) } })));
   d.append(el('div', { class: 'field' }, el('label', { for: 'dir' }, L('Save location')), el('div', { class: 'inline' }, el('input', { id: 'dir', type: 'text', value: view.parentDir, readonly: true }), el('button', { class: 'btn secondary', type: 'button', on: { click: () => send({ type: 'browse' }) } }, L('Browse...')))));

@@ -192,7 +192,7 @@ export class ConfigurationStore {
       return relative;
     };
     for (const c of document.configurations) {
-      for (const key of ["target", "cwd", "output"] as const) {
+      for (const key of ["target", "cwd", "output", "stm32Elf", "stm32Interface", "stm32Target", "stm32Openocd", "stm32Gdb", "stm32Gcc"] as const) {
         c[key] = portable(c[key], `${c.id}-${key}`);
       }
       c.toolchain = portablePath(c.toolchain, folder.uri.fsPath);

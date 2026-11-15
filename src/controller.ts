@@ -39,8 +39,9 @@ export class AtelierController implements vscode.Disposable {
     if(!folder){throw new RunnerError('Open or select a workspace folder to manage project configurations.',true);}
     const current=!!file&&vscode.workspace.getWorkspaceFolder(vscode.Uri.file(file))?.uri.toString()===folder.uri.toString();
     const language=current&&this.last&&supports(this.last.languageId)?this.last.languageId:'python';
+    const pioRoot=current ? await (await import('./embedded/platformio/project')).nearestPlatformioRoot(file,folder.uri.fsPath,(await import('./embedded/stm32/workflow')).stm32Host) : undefined;
     const detected=current?await findProject(file,folder.uri.fsPath,language):undefined;
-    return {folder,root:detected?.root??folder.uri.fsPath,file:current?file:path.join(folder.uri.fsPath,'main.py'),language,project:!!detected};
+    return {folder,root:pioRoot??detected?.root??folder.uri.fsPath,file:current?file:path.join(folder.uri.fsPath,'main.py'),language,project:!!pioRoot||!!detected};
   }
   updateStatus():void{void vscode.commands.executeCommand('setContext','sakuraAtelier.debugRunning',this.debug?.running??false);void this.statusText();}
   private async statusText():Promise<void>{
@@ -66,11 +67,47 @@ export class AtelierController implements vscode.Disposable {
     if(picked.action==='configure'){await this.configureNative();}else{await this.openManager(picked.action==='toolchains'?'toolchains':picked.action==='sdk'?'sdk':'configurations',picked.action==='add');}
   }
   private async configureNative():Promise<void>{const choice=await ui.showQuickPick(['Edit Configurations...','Open launch.json / Add Debug Configuration','Open Tasks Configuration'],{title:'Configure Run/Debug'});if(choice?.startsWith('Edit')){await this.openManager();}else if(choice?.startsWith('Open launch')){await vscode.commands.executeCommand('workbench.action.debug.configure');}else if(choice){await vscode.commands.executeCommand('workbench.action.tasks.configureTaskRunner');}}
+  async stm32(action:'build'|'run'|'debug'):Promise<void>{
+    const active=vscode.window.activeTextEditor?.document.uri;
+    const ctx=await this.editorContext(active?vscode.workspace.getWorkspaceFolder(active):undefined); let {document}=await this.store.read(ctx.folder);
+    if(vscode.workspace.isTrusted && !document.configurations.some(c=>c.templateId==='stm32')){
+      const {readStm32Project}=await import('./embedded/stm32/project');const workflow=await import('./embedded/stm32/workflow');
+      for(let root=active?path.dirname(active.fsPath):ctx.root;;root=path.dirname(root)){
+        if(await readStm32Project(root,workflow.stm32Host)){await workflow.seedGeneratedConfigurations(this.context,root);document=(await this.store.read(ctx.folder)).document;break;}
+        if(root===ctx.folder.uri.fsPath || path.dirname(root)===root)break;
+      }
+    }
+    const selection=this.store.selection(ctx.folder,ctx.root,document);
+    const selected=selection.kind==='managed'?document.configurations.find(c=>c.id===selection.id && c.templateId==='stm32'):undefined;
+    const candidates=document.configurations.filter(c=>c.templateId==='stm32' && (action==='build' ? c.stm32Action==='build' : c.stm32Action===action));
+    const nearest=active?candidates.filter(c=>{const root=path.resolve(ctx.folder.uri.fsPath,c.target.replaceAll('${workspaceFolder}',ctx.folder.uri.fsPath));return active.fsPath===root || active.fsPath.startsWith(root+path.sep);}):[];
+    nearest.sort((a,b)=>b.target.length-a.target.length);
+    const best=(selected && (!nearest.length || selected.target===nearest[0].target)?selected:undefined) || nearest[0] || (candidates.length===1?candidates[0]:undefined);
+    const c=best || (await vscode.window.showQuickPick(candidates.map(c=>({label:c.name,description:c.target,c})),{title:'选择 STM32 配置'}))?.c;
+    if(!c){await this.openManager();return;}
+    await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',true);
+    try{await (await import('./embedded/stm32/workflow')).runStm32Configuration(this,ctx.folder,c,action);}finally{await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',this.executor.busy);}
+  }
+  async buildLanguageProject():Promise<void>{
+    if(!vscode.workspace.isTrusted)throw new RunnerError('工作区未受信任。');
+    const ctx=await this.editorContext();const {document}=await this.store.read(ctx.folder);const selection=this.store.selection(ctx.folder,ctx.root,document);
+    const selected=selection.kind==='managed'?document.configurations.find(c=>c.id===selection.id):undefined;
+    const c=selected && ['typescript.project','java.project'].includes(selected.templateId)?selected:document.configurations.find(c=>c.id===document.default && ['typescript.project','java.project'].includes(c.templateId));
+    if(!c)throw new RunnerError('当前工程没有 TypeScript / Java 构建配置。');
+    await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',true);
+    try{if(!await this.executor.exclusive(async()=>{if(!await vscode.workspace.saveAll(false))throw new RunnerError('保存失败，已取消编译。');await vscode.window.withProgress({location:vscode.ProgressLocation.Notification,title:'编译项目'},()=>this.executeManaged({...c,operation:'build'},ctx,'run'));}))throw new RunnerError('另一个操作正在执行。');}finally{await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',this.executor.busy);}
+  }
   async run(action:'run'|'debug'):Promise<void>{
     if(!vscode.workspace.isTrusted){throw new RunnerError('Code execution is disabled in an untrusted workspace. Trust it before running or debugging.');}
     // Preserve standalone Run and every original auto-detection behavior.
     if(action==='run'&&!vscode.workspace.workspaceFolders?.length){await this.legacy();return;}
     const ctx=await this.editorContext();const {document}=await this.store.read(ctx.folder);const selection=this.store.selection(ctx.folder,ctx.root,document);
+    const pio=selection.kind==='managed'?document.configurations.find(c=>c.id===selection.id && c.templateId==='platformio'):undefined;
+    const activePio=await (await import('./embedded/platformio/workflow')).activePlatformioRoot();
+    const matchingPio=pio && (!activePio || path.resolve(ctx.folder.uri.fsPath,pio.target.replaceAll('${workspaceFolder}',ctx.folder.uri.fsPath))===activePio) ? pio : undefined;
+    if(matchingPio || (activePio && ['auto','file','project','test'].includes(selection.kind))){await (await import('./embedded/platformio/workflow')).runPlatformioConfiguration(this,action==='debug'?'debug':undefined,matchingPio);return;}
+    const embedded=selection.kind==='managed'?document.configurations.find(c=>c.id===selection.id && c.templateId==='stm32'):undefined;
+    if(embedded){await (await import('./embedded/stm32/workflow')).runStm32Configuration(this,ctx.folder,embedded,action==='debug'?'debug':embedded.stm32Action==='build'?'build':embedded.stm32Action==='debug'?'debug':'run');return;}
     if(action==='run'&&['auto','file','project'].includes(selection.kind)){await this.legacy(selection.kind==='file'?'file':selection.kind==='project'?'project':undefined);return;}
     await this.executor.exclusive(async()=>{
       const doc=vscode.window.activeTextEditor?.document;if(doc?.isDirty&&!await doc.save()){throw new RunnerError('Save failed; execution cancelled.');}
@@ -101,11 +138,15 @@ export class AtelierController implements vscode.Disposable {
     let executable=result.toolchain;
     const reference=c.toolchain.match(/^\$\{toolchain:([^}]+)\}$/)?.[1];
     if(c.language==='rust'&&!result.rustToolchain&&reference){result.rustToolchain=local.find(t=>t.id===reference)?.rustToolchain||'';}
+    if(!executable && ['typescript.project','java.project'].includes(c.templateId))executable=this.context.globalState.get<string>('atelier.createdProjectSdk:'+vscode.Uri.file(cwd).toString(),'');
     const defaultId=this.store.defaultToolchain(c.language,ctx.folder)||(['javascript','typescript','javascriptreact','typescriptreact'].includes(c.language)?this.store.defaultToolchain('node',ctx.folder):'');
     if(c.language==='rust'&&!result.rustToolchain&&defaultId){result.rustToolchain=local.find(t=>t.id===defaultId)?.rustToolchain||'';}
     if(!executable&&defaultId){executable=local.find(t=>t.id===defaultId)?.executable||'';if(!executable){throw new RunnerError('Selected default SDK no longer exists. Open Toolchains Manager.',true);}}
     const settings=vscode.workspace.getConfiguration('sakuraRunner',ctx.folder.uri);
+    if(c.language==='python' && c.toolchain.endsWith('/.venv'))executable=path.join(executable,process.platform==='win32'?'Scripts/python.exe':'bin/python');
     if(executable&&await fs.stat(path.resolve(ctx.root,executable)).then(s=>s.isDirectory()).catch(()=>false)){const names:Record<string,string[]>= {python:process.platform==='win32'?['Scripts/python.exe','python.exe']:['bin/python3','bin/python'],go:['bin/go'+(process.platform==='win32'?'.exe':'')],rust:['bin/cargo'+(process.platform==='win32'?'.exe':'')],node:process.platform==='win32'?['node.exe']:['bin/node'],c:['bin/clang','bin/gcc','bin/cl.exe'],cpp:['bin/clang++','bin/g++','bin/cl.exe'],csharp:['dotnet'+(process.platform==='win32'?'.exe':'')],java:['bin/java'+(process.platform==='win32'?'.exe':'')]};const candidates=names[c.language]||names.node;let found='';for(const relative of candidates){const candidate=path.join(executable,relative);if(await fs.stat(candidate).then(s=>s.isFile()).catch(()=>false)){found=candidate;break;}}if(!found){throw new RunnerError('No supported executable was found in this SDK directory. Select its exact executable.',true);}executable=found;}
+    if(c.language==='python' && /(?:^|\/)\.venv(?:\/|$)/.test(c.toolchain) && !await fs.stat(executable).then(s=>s.isFile()).catch(()=>false))throw new RunnerError('项目 .venv 缺失或损坏。请执行“Python：重新创建项目虚拟环境”修复。');
+    if(c.language==='python' && /(?:^|\/)\.venv(?:\/|$)/.test(c.toolchain)){try{await (await import('./toolchains')).query(executable,['-c','import sys; assert sys.prefix != sys.base_prefix'],cwd);}catch{throw new RunnerError('项目 .venv 不可用。请执行“Python：重新创建项目虚拟环境”修复。');}}
     if(c.language==='python'){executable=await this.python.interpreter(executable||settings.get<string>('pythonPath',''),ctx.folder,ctx.root,synchronizePython);}
     if(!executable&&c.language==='c'){executable=settings.get('cCompiler','');}if(!executable&&c.language==='cpp'){executable=settings.get('cppCompiler','');}
     if(!executable&&c.language==='java'){executable=settings.get('javaPath','')||(process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin',process.platform==='win32'?'java.exe':'java'):'');}
@@ -135,8 +176,11 @@ export class AtelierController implements vscode.Disposable {
   }
   async checkDependencies(id?:string):Promise<void>{const {inspectProjectDependencies}=await import('./environment/dependencyUi');await inspectProjectDependencies(this,id);}
   async createPythonTerminal():Promise<void>{const ctx=await this.editorContext();const {document}=await this.store.read(ctx.folder);const selected=this.store.selection(ctx.folder,ctx.root,document);const c=selected.kind==='managed'?document.configurations.find(c=>c.id===selected.id):newConfiguration('python');if(!c||c.language!=='python'){throw new RunnerError('Select a Python run configuration before opening its terminal.',true);}const cache=await fs.mkdtemp(path.join(os.tmpdir(),'sakura-atelier-terminal-'));try{const resolved=await this.resolved(c,ctx,cache);await this.python.createTerminal(resolved.context.toolchain,ctx.folder,resolved.configuration.cwd,c.autoActivate);}finally{await fs.rm(cache,{recursive:true,force:true});}}
-  async stop():Promise<void>{this.executor.stop();await this.debug.stop();}
-  dispose():void{this.panel?.dispose();this.python.dispose();this.debug.dispose();this.status.dispose();for(const sub of this.subscriptions){sub.dispose();}}
-  async selectManaged(folder:vscode.WorkspaceFolder,root:string,id:string):Promise<void>{await this.store.select(folder,root,{kind:'managed',id});const c=(await this.store.read(folder)).document.configurations.find(c=>c.id===id);if(c?.language==='python'&&c.toolchain){const ctx=await this.editorContext(folder);const cache=await fs.mkdtemp(path.join(os.tmpdir(),'sakura-atelier-select-'));try{await this.resolved(c,{...ctx,root},cache);}finally{await fs.rm(cache,{recursive:true,force:true});}}this.updateStatus();}
+  pioMonitor?:TaskExecutor;
+  pioMonitorRoot?:string;
+  stm32Cleanup?:()=>Promise<void>;
+  async stop():Promise<void>{this.executor.stop();this.pioMonitor?.stop();await this.debug.stop();await this.stm32Cleanup?.();this.stm32Cleanup=undefined;}
+  dispose():void{this.pioMonitor?.dispose();void this.stm32Cleanup?.();this.panel?.dispose();this.python.dispose();this.debug.dispose();this.status.dispose();for(const sub of this.subscriptions){sub.dispose();}}
+  async selectManaged(folder:vscode.WorkspaceFolder,root:string,id:string):Promise<void>{await this.store.select(folder,root,{kind:'managed',id});void import('./embedded/stm32/intellisense').then(service=>service.refreshStm32IntelliSense(this)).catch(error=>console.error('STM32 代码补全刷新：',error));const c=(await this.store.read(folder)).document.configurations.find(c=>c.id===id);if(c?.language==='python'&&c.toolchain){const ctx=await this.editorContext(folder);const cache=await fs.mkdtemp(path.join(os.tmpdir(),'sakura-atelier-select-'));try{await this.resolved(c,{...ctx,root},cache);}finally{await fs.rm(cache,{recursive:true,force:true});}}this.updateStatus();}
   async document(folder:vscode.WorkspaceFolder):Promise<ConfigurationFile>{return (await this.store.read(folder)).document;}
 }

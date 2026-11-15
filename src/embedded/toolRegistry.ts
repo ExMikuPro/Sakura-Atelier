@@ -30,7 +30,11 @@ export class EmbeddedToolRegistry {
     await this.store.update(embeddedToolsKey, next);
   }
 
-  discover(): Promise<Record<EmbeddedToolId, ToolStatus>> { return discoverEmbeddedTools(this.host, this.manual()); }
+  async discover(): Promise<Record<EmbeddedToolId, ToolStatus>> {
+    const result = await discoverEmbeddedTools(this.host, this.manual());
+    await this.store.update('atelier.embeddedTools.discovered', result);
+    return result;
+  }
 
   async resolve(id: EmbeddedToolId): Promise<string | undefined> { return (await this.discover())[id].selected?.path; }
 }

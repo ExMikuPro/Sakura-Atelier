@@ -73,5 +73,14 @@
   "command.rescanToolchains": "重新扫描当前环境的工具链",
   "command.checkProjectDependencies": "Sakura Atelier：项目依赖检查与修复…",
   "command.sakuraAtelier.embedded.stm32.generate": "Sakura Atelier：STM32CubeMX 6.x：生成 CMake 工程",
-  "command.sakuraAtelier.embedded.stm32.configureCLI": "Sakura Atelier：STM32CubeMX 6.x：使用 CLI 配置 (-i)"
+  "command.sakuraAtelier.embedded.stm32.configureCLI": "Sakura Atelier：STM32CubeMX 6.x：使用 CLI 配置 (-i)",
+  "command.sakuraAtelier.embedded.stm32.run": "STM32 — 运行（烧录并启动）",
+  "setting.sakuraAtelier.stm32.autoIntelliSense": "自动为 STM32 工程提供 C/C++ 代码补全配置；保留已有的补全配置和配置提供程序。",
+  "command.sakuraAtelier.embedded.platformio.stopMonitor": "PlatformIO：停止串口监视",
+  "command.sakuraAtelier.embedded.platformio.refreshConfigurations": "PlatformIO：刷新工程运行配置",
+  "command.sakuraAtelier.embedded.platformio.refreshIntelliSense": "PlatformIO：刷新代码补全",
+  "setting.sakuraAtelier.platformio.autoIntelliSense": "使用 PlatformIO IDE 元数据自动配置 C/C++ 代码补全。受信任的活动工程可能准备元数据并下载缺失的 SDK，不会上传固件。",
+  "command.sakuraAtelier.build": "编译项目",
+  "command.sakuraAtelier.python.recreateEnvironment": "Python：重新创建项目虚拟环境",
+  "command.sakuraAtelier.java.configureBuildTools": "Java：一键配置 Maven / Gradle / Wrapper"
 }

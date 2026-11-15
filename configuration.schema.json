@@ -206,6 +206,81 @@
           "templateId": {
             "type": "string",
             "description": "Optional template identity; old configurations remain supported."
+          },
+          "stm32Action": {
+            "type": "string"
+          },
+          "stm32Preset": {
+            "type": "string"
+          },
+          "stm32BuildBefore": {
+            "type": "string"
+          },
+          "stm32Probe": {
+            "type": "string"
+          },
+          "stm32Interface": {
+            "type": "string"
+          },
+          "stm32Target": {
+            "type": "string"
+          },
+          "stm32Transport": {
+            "type": "string"
+          },
+          "stm32Speed": {
+            "type": "string"
+          },
+          "stm32Port": {
+            "type": "string"
+          },
+          "stm32Load": {
+            "type": "string"
+          },
+          "stm32Main": {
+            "type": "string"
+          },
+          "stm32Elf": {
+            "type": "string"
+          },
+          "stm32Openocd": {
+            "type": "string"
+          },
+          "stm32Gdb": {
+            "type": "string"
+          },
+          "stm32Gcc": {
+            "type": "string"
+          },
+          "pioAction": {
+            "type": "string"
+          },
+          "pioEnvironment": {
+            "type": "string"
+          },
+          "pioUploadPort": {
+            "type": "string"
+          },
+          "pioUploadProtocol": {
+            "type": "string"
+          },
+          "pioBuildBefore": {
+            "type": "string"
+          },
+          "pioMonitorAfter": {
+            "type": "string"
+          },
+          "pioMonitorPort": {
+            "type": "string"
+          },
+          "pioMonitorSpeed": {
+            "type": "string"
+          },
+          "pioFilters": {
+            "type": "string"
+          },
+          "pioDebugTool": {
+            "type": "string"
           }
         }
       }

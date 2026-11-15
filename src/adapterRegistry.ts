@@ -1,3 +1,5 @@
+import { platformioBackend } from './embedded/platformio/project';
+import { stm32Backend } from './embedded/stm32/project';
 import type { RuntimeLanguage } from './configuration';
 import type { ProjectTemplate } from './embedded/projects/template';
 import type { BackendHost, BackendProject, BuildSystemDescriptor, ProjectBackend, RunTargetDescriptor, RuntimeAdapter } from './adapterTypes';
@@ -40,7 +42,10 @@ export class AdapterRegistry {
 
 /** Build systems and run targets that the existing language adapters already use. Descriptive only; behaviour is unchanged. */
 export function registerBuiltinDescriptors(registry: AdapterRegistry): void {
+  registry.backends.register('platformio',platformioBackend);
+  registry.backends.register('stm32',stm32Backend);
   const buildSystems: BuildSystemDescriptor[] = [
+    {id:'platformio',label:'PlatformIO',markers:['platformio.ini']},
     { id: 'direct', label: 'Direct compiler / interpreter', markers: [] },
     { id: 'cmake', label: 'CMake', markers: ['CMakeLists.txt'] },
     { id: 'make', label: 'Make', markers: ['Makefile'] },

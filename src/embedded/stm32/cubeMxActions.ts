@@ -48,5 +48,6 @@ export async function cubeMxAction(context: vscode.ExtensionContext, action: 'ge
   output.show(true);
   const root = path.dirname(uri.fsPath); const name = info.projectName || path.basename(uri.fsPath, path.extname(uri.fsPath));
   await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'STM32CubeMX 6.x — 生成 CMake 工程', cancellable: true }, (_progress, cancellation) => generateWithCubeMx({ executable, root, ioc: uri.fsPath, projectName: name, script: regenerateCubeMxScript(uri.fsPath, root, name), toolchain: 'CMake', mode: mode.mode }, value => output!.append(value), cancellation));
+  await vscode.commands.executeCommand('sakuraAtelier.embedded.stm32.refreshConfigurations',root);
   void vscode.window.showInformationMessage('STM32CubeMX 已生成 CMake 工程。可运行“STM32：构建”。');
 }

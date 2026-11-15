@@ -14,7 +14,7 @@ export interface PlatformioPlanInput {
   pio?: string;
   project: PlatformioProject;
   env: string;
-  port?: string; baud?: number;
+  port?: string; baud?: number; filters?: string[]; uploadProtocol?: string; buildBefore?: boolean; debugTool?: string;
   extraArgs?: string[];
   metadata?: EnvironmentMetadata;
   ideExtensionInstalled?: boolean;
@@ -35,8 +35,10 @@ export function buildPlatformioPlan(input: PlatformioPlanInput): EmbeddedPlan {
   const blockers: string[] = [];
   const environment: PlatformioEnvironment | undefined = project.environments.find(e => e.name === envName);
   if (!environment) { blockers.push(`Environment "${envName}" is not defined in platformio.ini.`); }
+  if (operation === 'build' && /(?:^|[\s,])(?:upload|program|erase)(?:$|[\s,])/.test(environment?.options?.targets || '')) { blockers.push('当前 Environment 的默认 targets 包含设备写入操作。请移除 platformio.ini 的默认上传目标，使用运行按钮上传。'); }
+  if (input.baud !== undefined && (!Number.isInteger(input.baud) || input.baud < 1)) blockers.push('串口波特率必须是正整数。');
   if (!input.pio) { blockers.push('PlatformIO Core (pio) was not found. Locate it with "Sakura Atelier: Embedded Tools...".'); }
-  const bad = rejectTargetArguments(input.extraArgs ?? []);
+  const bad = rejectTargetArguments(input.extraArgs ?? []) || (input.extraArgs ?? []).find(arg=>/^(?:-e|-d|-c|--environment|--project-dir|--project-conf|--upload-port|--port)(?:=|$)|^-[edc]./.test(arg));
   if (bad) { blockers.push(`Extra argument "${bad}" selects a PlatformIO target; use the dedicated action instead.`); }
   const base = { backend: 'platformio', operation, label, blockers };
   const pio = input.pio ?? 'pio';
@@ -49,9 +51,9 @@ export function buildPlatformioPlan(input: PlatformioPlanInput): EmbeddedPlan {
     case 'clean': return { ...base, risk: 'safe', steps: [step(['run', ...common, '-t', 'clean'], label)] };
     case 'upload': return {
       ...base, risk: 'writes-device', confirm: deviceWarning(envName, 'Upload', input.port, input.remote),
-      steps: [step(['run', ...common, '-t', 'upload', ...(input.port ? ['--upload-port', input.port] : [])], label)]
+      steps: [step(['run', ...common, ...(input.buildBefore === false ? ['-t','nobuild'] : []), '-t', environment?.family === 'native' ? 'exec' : 'upload', ...(input.port ? ['--upload-port', input.port] : [])], label)]
     };
-    case 'monitor': return { ...base, risk: 'safe', steps: [step(['device', 'monitor', '-d', project.root, '-e', envName, ...(input.port ? ['--port', input.port] : []), ...(input.baud ? ['--baud', String(input.baud)] : [])], label)] };
+    case 'monitor': return { ...base, risk: 'safe', steps: [step(['device', 'monitor', '-d', project.root, '-e', envName, ...(input.port ? ['--port', input.port] : []), ...(input.baud ? ['--baud', String(input.baud)] : []), ...(input.filters ?? []).flatMap(filter=>['--filter',filter])], label)] };
     case 'test': {
       // On a hardware environment `pio test` uploads the test firmware. The default test action only builds there.
       const hardware = environment?.family !== 'native';
@@ -66,13 +68,13 @@ export function buildPlatformioPlan(input: PlatformioPlanInput): EmbeddedPlan {
       if (!input.metadata?.gdbPath) { blockers.push('The debugger path is unknown. Load the build details for this environment first; PlatformIO may download its platform.'); }
       const executable = input.metadata?.progPath || path.join(project.root, '.pio', 'build', envName, 'firmware.elf');
       return {
-        ...base, risk: 'writes-device', confirm: deviceWarning(envName, 'Starting a debug session', input.port, input.remote), steps: [],
+        ...base, risk: 'writes-device', confirm: deviceWarning(envName, 'Starting a debug session', input.port, input.remote), steps: blockers.length ? [] : [step(['debug',...common],label)],
         debug: {
           extension: platformioIdeExtension,
           configuration: {
             type: 'platformio-debug', request: 'launch', name: `PlatformIO Debug (${envName})`,
             executable, projectEnvName: envName, toolchainBinDir: input.metadata?.gdbPath ? path.dirname(input.metadata.gdbPath) : '',
-            internalConsoleOptions: 'openOnSessionStart', preLaunchTask: { type: 'PlatformIO', task: 'Pre-Debug' }
+            internalConsoleOptions: 'openOnSessionStart', cwd: project.root
           }
         }
       };

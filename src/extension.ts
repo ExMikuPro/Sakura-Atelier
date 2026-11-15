@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const action = (kind:'run'|'debug',mode?:Mode) => safe(async()=>{
     if(!vscode.workspace.isTrusted){await ui.showWarningMessage('Sakura Atelier: Code execution is disabled in an untrusted workspace. Trust this workspace before running.');return;}
     await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',true);
-    try{if(mode){await run(mode,()=>controller!.openManager());}else{await controller!.run(kind);}}
+    try{if(mode && await (await import('./embedded/platformio/workflow')).activePlatformioRoot()){await (await import('./embedded/platformio/workflow')).runPlatformioConfiguration(controller!);}else if(mode){await run(mode,()=>controller!.openManager());}else{await controller!.run(kind);}}
     finally{await vscode.commands.executeCommand('setContext','sakuraAtelier.runRunning',executor?.busy??false);}
   });
   for(const namespace of ['sakuraAtelier','sakuraRunner']){
@@ -34,11 +34,47 @@ export function activate(context: vscode.ExtensionContext): void {
     register('stop',safe(()=>controller!.stop()));register('configure',safe(()=>controller!.openManager()));register('editConfigurations',safe(()=>controller!.openManager()));register('addConfiguration',safe(()=>controller!.openManager('configurations',true)));register('manageToolchains',safe(()=>controller!.openManager('toolchains')));register('sdkManager',safe(()=>controller!.openManager('sdk')));register('pythonTerminal',safe(()=>controller!.createPythonTerminal()));
     context.subscriptions.push(vscode.commands.registerCommand(`${namespace}.selectConfiguration`,(id?:string)=>safe(()=>controller!.selectConfiguration(id))()));
   }
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.java.configureBuildTools',(preferred?:'maven'|'gradle')=>safe(async()=>{await (await import('./languageProjects/configureJavaTools')).configureJavaTools(controller!,preferred);})()));
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.python.recreateEnvironment',safe(async()=>{await (await import('./languageProjects/pythonRepair')).repairProjectVenv(controller!);})));
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.build',safe(()=>controller!.buildLanguageProject())));
+  const updateLanguageBuildContext=async()=>{
+    let enabled=false;const doc=vscode.window.activeTextEditor?.document;
+    if(doc && ['java','typescript','typescriptreact'].includes(doc.languageId)){const folder=vscode.workspace.getWorkspaceFolder(doc.uri);if(folder){const data=await controller!.store.read(folder);enabled=data.document.configurations.some(c=>['typescript.project','java.project'].includes(c.templateId));}}
+    if(vscode.window.activeTextEditor?.document.uri.toString()===doc?.uri.toString())await vscode.commands.executeCommand('setContext','sakuraAtelier.languageProjectBuild',enabled);
+  };
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(()=>{void updateLanguageBuildContext();}));void updateLanguageBuildContext();
   try { initializeEmbeddedState(context); registerEmbeddedEditors(context); } catch (error) { console.error('Sakura Atelier: embedded editors are unavailable.', error); }
   // Embedded support is loaded on first use so activation stays unchanged.
   for(const name of ['manageTools','platformio.selectEnvironment','platformio.build','platformio.clean','platformio.upload','platformio.debug','platformio.monitor','platformio.test','platformio.testOnDevice','stm32.build','stm32.flash','stm32.debug','reloadDevices','newProject'] as const){
-    context.subscriptions.push(vscode.commands.registerCommand(name==='newProject'?'sakuraAtelier.newProject':`sakuraAtelier.embedded.${name}`,safe(async()=>{const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);})));
+    context.subscriptions.push(vscode.commands.registerCommand(name==='newProject'?'sakuraAtelier.newProject':`sakuraAtelier.embedded.${name}`,safe(async()=>{if(name.startsWith('platformio.')){await (await import('./embedded/platformio/workflow')).runPlatformioConfiguration(controller!,name.slice('platformio.'.length) as import('./embedded/platformio/plans').PlatformioOperation|'selectEnvironment');return;}if(name==='stm32.build'||name==='stm32.flash'||name==='stm32.debug'){await controller!.stm32(name==='stm32.build'?'build':name==='stm32.flash'?'run':'debug');return;}const embedded=await import('./embedded/commands');await embedded.runEmbeddedCommand(name,context,executor!,controller!.debug);if(name==='manageTools')await (await import('./embedded/stm32/intellisense')).refreshStm32IntelliSense(controller!,true);})));
   }
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.stm32.run',safe(()=>controller!.stm32('run'))));
+  let scanningStm32=false;
+  const scanStm32=safe(async()=>{if(scanningStm32)return;scanningStm32=true;try{await (await import('./embedded/platformio/workflow')).refreshPlatformioConfigurations(controller!);await (await import('./embedded/stm32/workflow')).offerStm32Configurations(controller!);}finally{scanningStm32=false;}});
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.stm32.refreshConfigurations',(root?:string)=>safe(async()=>{await (await import('./embedded/stm32/workflow')).offerStm32Configurations(controller!,root);})()));
+  let scanTimer:ReturnType<typeof setTimeout>|undefined;
+  const watcher=vscode.workspace.createFileSystemWatcher('**/{platformio.ini,*.ioc,CMakeLists.txt,CMakePresets.json}');
+  const scheduleScan=()=>{if(scanTimer)clearTimeout(scanTimer);scanTimer=setTimeout(()=>{void scanStm32();void updateStm32Context();},800);};
+  context.subscriptions.push(watcher,watcher.onDidCreate(scheduleScan),watcher.onDidChange(scheduleScan),watcher.onDidDelete(scheduleScan),vscode.workspace.onDidChangeWorkspaceFolders(scheduleScan),vscode.workspace.onDidGrantWorkspaceTrust(scheduleScan),{dispose:()=>{if(scanTimer)clearTimeout(scanTimer);}});
+  const updateStm32Context=async()=>{
+    const uri=vscode.window.activeTextEditor?.document.uri;
+    const folder=uri?vscode.workspace.getWorkspaceFolder(uri):undefined;
+    const pioRoot=await (await import('./embedded/platformio/workflow')).activePlatformioRoot();
+    if(controller?.pioMonitorRoot && ((uri && controller.pioMonitorRoot!==pioRoot) || !vscode.workspace.getWorkspaceFolder(vscode.Uri.file(controller.pioMonitorRoot))))controller.pioMonitor?.stop();
+    if(vscode.window.activeTextEditor?.document.uri.toString()===uri?.toString())await vscode.commands.executeCommand('setContext','sakuraAtelier.platformioEditor',!!pioRoot);
+    let found=false;
+    if(!pioRoot&&uri?.scheme==='file'&&folder&&(/\.(c|cpp|h|hpp|s|ioc)$/i.test(uri.fsPath)||/CMake(Lists\.txt|Presets\.json)$|Makefile$/.test(uri.fsPath))){
+      const {readStm32Project}=await import('./embedded/stm32/project'); const {stm32Host}=await import('./embedded/stm32/workflow');
+      for(let dir=path.dirname(uri.fsPath);;dir=path.dirname(dir)){if(await readStm32Project(dir,stm32Host)){found=true;break;}if(dir===folder.uri.fsPath||path.dirname(dir)===dir)break;}
+    }
+    if(vscode.window.activeTextEditor?.document.uri.toString()===uri?.toString())await vscode.commands.executeCommand('setContext','sakuraAtelier.stm32Editor',found);
+  };
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(()=>{void updateStm32Context();}));
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.platformio.refreshIntelliSense',safe(async()=>{await (await import('./embedded/stm32/intellisense')).refreshStm32IntelliSense(controller!,true);})));
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.platformio.refreshConfigurations',safe(async()=>{await (await import('./embedded/platformio/workflow')).refreshPlatformioConfigurations(controller!);})));
+  context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.embedded.platformio.stopMonitor',()=>controller?.pioMonitor?.stop()));
+  scheduleScan();void updateStm32Context();
+  void import('./embedded/stm32/intellisense').then(({Stm32IntelliSense})=>{context.subscriptions.push(new Stm32IntelliSense(controller!));}).catch(error=>console.error('STM32 代码补全初始化失败：',error));
   context.subscriptions.push(vscode.commands.registerCommand('sakuraAtelier.checkProjectDependencies',safe(()=>controller!.checkDependencies())));
   for (const [name, action] of [['generate', 'generate'], ['configureCLI', 'interactive']] as const) {
     context.subscriptions.push(vscode.commands.registerCommand(`sakuraAtelier.embedded.stm32.${name}`, (uri?: vscode.Uri) => safe(async () => {

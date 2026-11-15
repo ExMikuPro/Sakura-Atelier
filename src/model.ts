@@ -1,7 +1,7 @@
 export const languages = ['go', 'python', 'rust', 'c', 'cpp', 'csharp', 'java', 'javascript', 'javascriptreact', 'typescript', 'typescriptreact'] as const;
 export type Language = typeof languages[number];
 export type Mode = 'auto' | 'file' | 'project';
-export interface Step { command: string; args: string[]; cwd: string; label: string; env?: Record<string,string>; terminal?: boolean }
+export interface Step { command: string; args: string[]; cwd: string; label: string; env?: Record<string,string>; terminal?: boolean; problemMatchers?: string[] }
 /** A plan is independent of execution, so Debug/Test can supply other executors later. */
 export interface RunPlan { name: string; steps: Step[] }
 /** Future Debug/Test backends can consume the same resolved plan without adding fake UI. */

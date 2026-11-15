@@ -1,7 +1,7 @@
 import type { DiscoveryHost } from './discoveryHost';
 import { pathApi } from './discoveryHost';
 
-export const embeddedToolIds = ['platformio', 'stm32cubemx', 'stm32cubeclt', 'arm-gcc', 'arm-gdb', 'cmake', 'ninja', 'stm32programmer', 'stlink-gdbserver'] as const;
+export const embeddedToolIds = ['openocd', 'platformio', 'stm32cubemx', 'stm32cubeclt', 'arm-gcc', 'arm-gdb', 'cmake', 'ninja', 'stm32programmer', 'stlink-gdbserver'] as const;
 export type EmbeddedToolId = typeof embeddedToolIds[number];
 /** `manual` entries come from the user's registry. `hint` entries come from scanning common locations and are only accepted after their layout is validated. */
 export type ToolSource = 'manual' | 'env' | 'path' | 'cubeclt' | 'sibling' | 'hint';
@@ -33,12 +33,13 @@ async function children(host: DiscoveryHost, root: string, pattern: RegExp): Pro
 }
 
 const specs: Record<EmbeddedToolId, ToolSpec> = {
+  openocd: { label: 'OpenOCD', names: () => ['openocd'], versionArgs: ['--version'], hints: async () => [] },
   platformio: {
     label: 'PlatformIO Core', names: () => ['pio', 'platformio'], versionArgs: ['--version'],
     async hints(host) {
       const p = pathApi(host.platform);
       const core = host.env.PLATFORMIO_CORE_DIR || p.join(host.home, '.platformio');
-      return [p.join(core, 'penv', host.platform === 'win32' ? 'Scripts' : 'bin')];
+      return [p.join(core, 'penv', host.platform === 'win32' ? 'Scripts' : 'bin'), ...[host.env.VIRTUAL_ENV, host.env.CONDA_PREFIX].filter((v): v is string=>!!v).map(v=>p.join(v,host.platform === 'win32' ? 'Scripts' : 'bin')), p.join(host.home,'.local','bin')];
     }
   },
   stm32cubemx: {
@@ -173,6 +174,7 @@ export async function discoverEmbeddedTools(host: DiscoveryHost, manual: ManualP
     if (configured) {
       if (await host.stat(configured) === 'file') { add(id, configured, 'manual'); } else { result[id].staleManual = configured; }
     }
+    for (const dir of macBinaryHints(host)) { for (const name of spec.names(host.platform)) { const file = p.join(dir, exe(host, name)); if (await host.stat(file) === 'file') { add(id, file, 'hint'); } } }
     for (const name of spec.names(host.platform)) { for (const file of await onPath(name, host)) { add(id, file, 'path'); } }
     for (const [root] of cltRoots) { const file = (await cltComponents(root, host))[id]; if (file) { add(id, file, 'cubeclt'); } }
     if (id === 'arm-gdb') {

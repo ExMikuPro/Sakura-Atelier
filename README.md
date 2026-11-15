@@ -38,9 +38,14 @@
   - **个人配置（默认）**：保存在本机工作区状态中，不产生 `.vscode/` 文件，不污染 Git 仓库。
   - **项目配置**：保存至 `.vscode/sakura-atelier.json`，自动将工作区路径转换为 `${workspaceFolder}` 等可移植变量，便于团队协作共享。
 
-### 2. 统一项目创建向导
-通过菜单 **文件 → 新建文件… → Sakura Atelier：新建项目…** 或命令面板启动三栏式创建向导（详见 [新建项目说明](docs/PROJECT_CREATION.md)）：
+### 2. 统一项目创建向导与语言初始化
+通过菜单 **文件 → 新建文件… → Sakura Atelier：新建项目…** 或命令面板启动三栏式创建向导（详见 [新建项目说明](docs/PROJECT_CREATION.md) 与 [语言项目初始化说明](docs/LANGUAGE_PROJECT_INITIALIZATION.md)）：
 - **通用软件工程**：一键生成包含规范目录结构、基础源码、`.gitignore` 与初始运行配置的 Python、JavaScript/Node.js、TypeScript、Go、Rust、C、C++、C#、Java 及空项目工程。
+- **Python、TypeScript 与 Java 深度初始化**：
+  - **Python**：按所选 SDK 自动创建并验证 `.venv`，支持 `pip` / `uv`。
+  - **TypeScript**：按所选 `npm` / `pnpm` 安装依赖，自动生成开发、编译与产物启动脚本。
+  - **Java / Spring Initializr**：支持普通应用与官方 Spring Initializr，提供 Maven、Gradle（Groovy/Kotlin）、JDK、项目坐标及框架依赖选项；支持**一键配置 Maven / Gradle / Wrapper**（复用已有工具或下载至本机独立存储，优先使用项目内的 `mvnw` / `gradlew`）。
+  - **安全可控的初始化流程**：全程显示进度，失败时保留已创建项目并清晰报告原因；绝不修改全局 `PATH` 或系统默认 SDK。
 - **嵌入式工程与器件收藏**：支持按型号、厂商、MCU 系列检索 PlatformIO 开发板与 STM32 MCU/开发板；支持一键星标收藏常用器件及“项目配置模板”（仅同步器件与框架标识，绝不泄露本机路径与串口信息）。
 - **严格目录保护**：创建前完整预览文件清单，采用排他写入机制，绝不覆盖或合并已存在的非空目录。
 
@@ -52,7 +57,7 @@
 更多细节请参阅 [嵌入式开发使用说明](docs/embedded-development-zh.md)：
 - **PlatformIO 集成**：自动解析 `platformio.ini` 中的多环境（`[env:*]`），提供构建（Build）、清理（Clean）、上传（Upload）、串口监视器（Monitor）、测试及调试入口。
 - **STM32 独立工程流**：支持识别 STM32CubeMX 与 STM32 CMake 工程，自动发现 Arm GNU Toolchain、CMake、Ninja、STM32CubeProgrammer 与 ST-LINK GDB Server。
-- **经典 STM32CubeMX 6.x 工程生成**：通过内置 CLI `-q` / `-s` 创建 `.ioc` 和 CMake 工程，支持 `-i` 配置及已有工程重新生成。[使用说明](docs/STM32_CUBEMX6_WORKFLOW.md)。本轮按要求未运行真实生成、编译或硬件验收。
+- **经典 STM32CubeMX 6.x 工程生成**：通过内置 CLI `-q` / `-s` 创建 `.ioc` 和 CMake 工程，支持 `-i` 配置及已有工程重新生成（详见 [STM32CubeMX 6.x 工作流说明](docs/STM32_CUBEMX6_WORKFLOW.md)）。
 - **操作严格分离**：将 **Build（构建）**、**Flash（烧录）** 与 **Debug（调试）** 拆分为独立动作，普通运行绝不会误触发硬件烧录，烧录过程仅执行编程与校验，拒绝整片擦除参数。
 - **专用 `.ioc` 只读视图**：双击 `.ioc` 文件即可在 VS Code 内直观查看工程与 MCU 摘要，并提供安全唤起本地 STM32CubeMX 的入口（SSH/WSL/容器远程环境下自动禁用本地启动并给出提示）。
 
@@ -66,15 +71,15 @@
 
 | 类别 | 语言 / 平台 | 核心能力 | 协同调试 / 底层工具 |
 | :--- | :--- | :--- | :--- |
-| **通用软件** | **Python** | 脚本、模块（`-m`）、Pytest、虚拟环境识别与终端激活 | Python Debugger |
-| | **JavaScript / TypeScript** | Node.js 运行、npm/pnpm/yarn 脚本、本地 `tsx` / `ts-node` / `tsc` | 内置 JavaScript Debugger |
+| **通用软件** | **Python** | 脚本、模块（`-m`）、Pytest、`.venv` 自动初始化与终端激活 | Python Debugger |
+| | **JavaScript / TypeScript** | Node.js 运行、npm/pnpm/yarn 脚本与依赖初始化、本地 `tsx` / `ts-node` / `tsc` | 内置 JavaScript Debugger |
 | | **Go** | `go run` / `build` / `test`、`go.mod` / `go.work`、`GOROOT` 管理 | Go 扩展 + Delve |
 | | **Rust** | Cargo 运行 / 构建 / 测试 / 示例、多 `toolchain` 与 `profile` 切换 | CodeLLDB |
 | | **C / C++** | 单/多源文件编译（GCC/Clang/MSVC）、标准与链接参数、Make/CMake | CodeLLDB / C++ 调试扩展 |
 | | **C# / .NET** | `csproj` / `sln` / `slnx`、`dotnet run` / `build` / `test` | 官方 C# 调试支持 |
-| | **Java** | 单文件运行、Maven / Gradle 项目任务联动 | Java Debugger |
+| | **Java** | 单文件运行、Spring Initializr、Maven / Gradle / Wrapper 一键配置与任务联动 | Java Debugger |
 | **嵌入式** | **PlatformIO** | 开发板数据库检索、多环境构建/上传/串口监视/调试 | PlatformIO Core / IDE |
-| | **STM32** | CubeMX / CMake 工程识别、`.ioc` 查看器、独立固件烧录与调试 | CubeCLT / CubeProgrammer / Cortex-Debug |
+| | **STM32** | CubeMX 6.x 生成与 CMake 工程识别、`.ioc` 查看器、独立固件烧录与调试 | CubeCLT / CubeProgrammer / Cortex-Debug |
 
 ---
 
@@ -170,8 +175,8 @@ Sakura-Atelier/
 │   ├── debugService.ts              # 外部调试扩展桥接与会话所有权追踪
 │   ├── pythonEnvironments.ts        # Python 环境接口集成与终端激活脚本生成
 │   └── localization.ts / i18n.ts    # 简体中文 / English 双语资源管理
-├── media/                           # 设置中心 Webview 界面、状态机与图标资源
-├── docs/                            # 详细设计文档、新建项目与嵌入式使用说明
+├── media/                           # 设置中心 Webview 界面、状态机与图标资源（icon.png）
+├── docs/                            # 详细设计文档、新建项目、语言初始化与嵌入式使用说明
 ├── scripts/                         # 构建脚本与隔离 Extension Host 测试启动器
 ├── test/                            # 单元测试、集成测试与 Playwright UI 测试
 └── configuration.schema.json        # .vscode/sakura-atelier.json 智能提示校验架构
@@ -183,9 +188,9 @@ Sakura-Atelier/
 
 本项目目前处于持续开发阶段（`v0.1.0`），核心集成测试与 UI 回归主要在 **macOS ARM64 (Apple Silicon)** 环境下完成：
 
-- **已真实验证**：macOS ARM64 下的编译打包、可视化设置中心、项目创建向导（全语言工程生成）、多语言运行与 Node.js / TypeScript / Python 断点调试、虚拟环境自动创建与激活、Homebrew 只读包查询以及 `.ioc` 只读编辑器。
+- **已真实验证**：macOS ARM64 下的编译打包、可视化设置中心、项目创建向导（全语言工程生成与依赖初始化）、多语言运行与 Node.js / TypeScript / Python 断点调试、虚拟环境自动创建与激活、Homebrew 只读包查询以及 `.ioc` 只读编辑器。
 - **实现完成待实机深化测试**：
-  - 嵌入式硬件端到端真机烧录（ST-LINK / `STM32_Programmer_CLI`）、Cortex-Debug 实机单步调试及 PlatformIO 真机连接上传（目前已完成参数构建与模拟执行验证）。
+  - 嵌入式硬件端到端真机烧录（ST-LINK / `STM32_Programmer_CLI`）、Cortex-Debug 实机单步调试、STM32CubeMX 6.x 真实工程生成以及 PlatformIO 真机连接上传（目前已完成参数构建与模拟执行验证）。
   - Go（Delve）、CMake 完整调试流与 C#（.NET SDK）在不同环境下的实机调试。
   - **Windows** 与 **Linux** 平台的原生端到端兼容性验收（已内置跨平台路径与 APT / WinGet 逻辑，欢迎社区提交测试反馈与 Issue）。
 

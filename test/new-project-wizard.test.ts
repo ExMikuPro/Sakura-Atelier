@@ -170,11 +170,11 @@ test('a typed STM32 part number is validated, starred and selected; a board name
   assert.equal(e.model.state.device?.id, 'STM32G0B1RETx'); assert.ok(new DeviceFavorites(e.s).isFavorite({ kind: 'stm32-mcu', id: 'STM32G0B1RETx' }));
 });
 
-test('STM32CubeMX template: remote windows and a missing CubeMX warn in Chinese and still allow the folder', async () => {
+test('STM32CubeMX template: remote windows and a missing classic CubeMX block generation with Chinese diagnostics', async () => {
   const remote = env({ templateId: 'stm32.cubemx', device: { kind: 'stm32-mcu', id: 'STM32G0B1RETx' }, name: 'motor', parentDir: '/work' }, { remote: true });
-  const rv = await remote.model.view(); assert.equal(rv.canCreate, true); assert.ok(rv.warnings[0].includes('远程窗口'));
+  const rv = await remote.model.view(); assert.equal(rv.canCreate, false); assert.ok(rv.blockers.some(b=>b.includes('本地工作区')));
   const none = env({ templateId: 'stm32.cubemx', device: { kind: 'stm32-mcu', id: 'STM32G0B1RETx' }, name: 'motor', parentDir: '/work' }, { tools: {} });
-  assert.ok((await none.model.view()).warnings[0].includes('未找到 STM32CubeMX'));
+  const nv=await none.model.view(); assert.equal(nv.canCreate,false); assert.ok(nv.blockers.some(b=>b.includes('经典 STM32CubeMX')));
 });
 
 test('importing an existing STM32 project needs only the folder', async () => {

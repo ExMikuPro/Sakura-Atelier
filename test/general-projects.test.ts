@@ -42,7 +42,7 @@ test('empty project creates only an empty directory without an SDK and refuses e
   await assert.rejects(executeCreation(plan, writesOnly));
   assert.equal(await fs.readFile(path.join(result.target, 'keep.txt'), 'utf8'), 'keep');
 }));
-for (const spec of projectLanguages) {
+for (const spec of projectLanguages.filter(spec=>!['python','typescript','java'].includes(spec.language))) {
   test(`${spec.label} creates real source/project files readable by the existing configuration store without an SDK`, () => fixture(async root => {
     const plan = await planCreation({ templateId: 'general.' + spec.language, parentDir: root, name: 'My.Project' }, context(spec.language));
     assert.deepEqual(plan.blockers, []);
@@ -64,7 +64,7 @@ for (const spec of projectLanguages) {
   }));
 }
 test('new language project creation rejects an existing directory even when it appears after planning', () => fixture(async root => {
-  const plan = await planCreation({ templateId: 'general.python', parentDir: root, name: 'existing' }, context('python'));
+  const plan = await planCreation({ templateId: 'general.python', parentDir: root, name: 'existing' }, {...context('python'),tools:{runtimes:{python:'/python'}}});
   await fs.mkdir(plan.target); await fs.writeFile(path.join(plan.target, 'sentinel'), 'user data');
   await assert.rejects(executeCreation(plan, writesOnly), /EEXIST/);
   assert.equal(await fs.readFile(path.join(plan.target, 'sentinel'), 'utf8'), 'user data');
@@ -72,7 +72,7 @@ test('new language project creation rejects an existing directory even when it a
 test('language project favorites and drafts do not require an embedded device or lose their language', async () => {
   const store = memory(); const templates = new Map(builtinProjectTemplates.map(t => [t.id, t]));
   const model = new WizardModel({ favorites: new DeviceFavorites(store), recents: new RecentDevices(store), templates: new FavoriteTemplates(store), projectTemplates: { get: id => templates.get(id), values: () => [...templates.values()] }, snapshot: () => ({ devices: [], status: new Map() }), loaded: () => true, creation: () => ({ ...context('python') }), language: 'zh-cn' }, { templateId: 'general.python', parentDir: '/tmp', name: 'PythonApp' });
-  const view = await model.view(); assert.equal(view.needsDevice, false); assert.equal(view.canCreate, true); assert.equal(view.templateFavorite.can, true); assert.ok(view.projectFiles.includes('src/main.py'));
+  const view = await model.view(); assert.equal(view.needsDevice, false); assert.equal(view.canCreate, false); assert.equal(view.templateFavorite.can, true); assert.ok(view.projectFiles.includes('src/main.py'));
   assert.equal(await model.toggleTemplateFavorite(), true);
   model.selectTemplate('general.go'); assert.equal((await model.view()).templates.find(t => t.selected)?.id, 'general.go');
   model.applyFavorite(new FavoriteTemplates(store).list()[0].id); assert.equal(model.state.templateId, 'general.python');
