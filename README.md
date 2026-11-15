@@ -54,7 +54,7 @@
 - **原生包管理器对接**：内置“SDK 安装与更新”视图，在用户明确确认后调用原生终端执行安装，支持 **Homebrew**（macOS）、**APT**（Debian/Ubuntu）与 **WinGet**（Windows），不擅自修改系统全局 `PATH` 或符号链接。
 
 ### 4. 嵌入式开发工作流（PlatformIO & STM32）
-更多细节请参阅 [嵌入式开发使用说明](docs/embedded-development-zh.md)：
+更多细节请参阅 [PlatformIO 工作流说明](docs/PLATFORMIO_WORKFLOW.md) 与 [STM32 OpenOCD 工作流说明](docs/STM32_OPENOCD_WORKFLOW.md)：
 - **PlatformIO 集成**：自动解析 `platformio.ini` 中的多环境（`[env:*]`），提供构建（Build）、清理（Clean）、上传（Upload）、串口监视器（Monitor）、测试及调试入口。
 - **STM32 独立工程流**：支持识别 STM32CubeMX 与 STM32 CMake 工程，自动发现 Arm GNU Toolchain、CMake、Ninja、STM32CubeProgrammer 与 ST-LINK GDB Server。
 - **经典 STM32CubeMX 6.x 工程生成**：通过内置 CLI `-q` / `-s` 创建 `.ioc` 和 CMake 工程，支持 `-i` 配置及已有工程重新生成（详见 [STM32CubeMX 6.x 工作流说明](docs/STM32_CUBEMX6_WORKFLOW.md)）。
