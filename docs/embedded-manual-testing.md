@@ -1,28 +1,30 @@
-# Manual test steps (hardware and real tools)
+# 嵌入式开发使用说明
 
-Automated tests use test doubles for CLIs and never need a board. The steps below need real hardware or real vendor tools and have **not** been run by the author.
+Sakura Atelier 为 **PlatformIO** 与 **STM32** 工程提供统一的项目创建、器件管理、工具链定位及构建/烧录/调试入口，底层协同调用 PlatformIO Core、STM32CubeMX 6.x、STM32CubeProgrammer、Arm GNU Toolchain 与 Cortex-Debug 等官方及社区工具。
 
-## STM32 (needs an STM32 board with ST-LINK, STM32CubeCLT or Arm GNU Toolchain + CMake + Ninja, STM32CubeProgrammer, Cortex-Debug)
+## 1. 新建嵌入式项目
 
-1. `Sakura Atelier: Embedded Tools...` shows each tool as found, or locate it manually.
-2. Open a CubeMX-generated CMake project. Run `STM32: Build`. Expect an ELF under `build/<preset>/`.
-3. Run `STM32: Flash`. Pick the ELF, the ST-LINK and confirm the MCU. Expect a modal confirmation naming the file and the MCU, then `STM32_Programmer_CLI` output with a verify and a reset. Confirm in the log that no erase option was passed. Check the program runs on the board.
-4. Run `STM32: Debug`. Expect a build, then a Cortex-Debug session that stops at `main`. Set a breakpoint, step, and stop. Verify the Cortex-Debug `stlink` properties (`serverpath`, `gdbPath`, `armToolchainPath`) match your installed version.
-5. Double-click an `.ioc` file: the Sakura Atelier page opens and CubeMX does **not** start. Click "Open with STM32CubeMX": CubeMX starts with that project. Check this on Windows, Linux and macOS; the single positional argument form has not been verified.
-6. In an SSH/WSL/Dev Container window, open an `.ioc`: the launch button is disabled with an explanation, "Open as text" works.
+通过 **文件 → 新建文件… → Sakura Atelier：新建项目…** 或命令面板打开三栏式向导（无需预先打开工作区）：
 
-## PlatformIO (needs a board and the PlatformIO IDE extension for debugging)
+| 项目类型 | 说明 |
+| :--- | :--- |
+| **PlatformIO 项目** | 选择开发板与对应框架，调用官方 `pio project init` 生成标准工程 |
+| **STM32CubeMX 项目** | 选择 STM32 MCU 或开发板，调用经典 6.x CLI（`-q` / `-s`）生成 `.ioc` 与 CMake / ARM GCC 工程（详见 [CubeMX 6.x 工作流](STM32_CUBEMX6_WORKFLOW.md)） |
+| **打开已有 STM32 项目** | 校验目录内包含 `.ioc` 或 STM32 CMake 工程后直接打开 |
 
-1. Create a project with `Sakura Atelier：新建项目`, check `platformio.ini` (board id, framework) and that no `.vscode` folder was written.
-2. `PlatformIO: Upload` asks for confirmation, uploads and the board runs the program.
-3. `PlatformIO: Serial Monitor` shows the board's output.
-4. `PlatformIO: Debug` loads details (a modal warns that PlatformIO may download the platform), then starts the PlatformIO IDE debug session. Check the `platformio-debug` launch configuration against your PlatformIO IDE version.
-5. `PlatformIO: Test on Device` runs tests on the board after confirmation.
+> **注意**：目标目录已存在时拒绝创建，绝不覆盖用户文件；STM32 MCU 型号、ST 开发板与 PlatformIO 开发板 ID 相互独立，不会隐式混用。
 
-## Wizard
+## 2. 器件检索、收藏与配置模板
 
-1. Open the wizard in a VS Code window with no folder open (File > New File... > Sakura Atelier：新建项目, and the command palette).
-2. Star a board, close and reopen the wizard: the star is still set. Open a different workspace: the favorite is still listed. Turn Settings Sync on for this extension's state and check the favorite appears on a second machine, with no paths in it.
-3. Rename or hide PlatformIO (so it is not found): favorites stay with "工具链未安装"; locating PlatformIO restores the list.
-4. Save a favorite project configuration, create the project from it, and check the board, framework and options are restored and a name and folder are asked for.
-5. Resize the window narrow: the three columns stack and everything stays usable. Check the dark, light and a custom theme.
+- **本地数据来源**：PlatformIO 开发板通过 `pio boards --json-output` 获取并缓存 7 天；STM32 器件自动读取本机 STM32CubeMX 数据库（`families.xml` 与 `*.pdsc`），并合并工作区 `.ioc` 及手动输入的合法型号（详见 [STM32 器件数据源说明](stm32-device-data.md)）。
+- **星标收藏与跨机同步**：点击器件右侧星标（☆/★）即可保存至全局收藏；点击 **收藏此项目配置** 可将器件、框架与构建选项存为模板。收藏数据仅保存器件标识与名称，可通过 VS Code Settings Sync 同步，绝不包含本机路径、串口或密钥。
+
+## 3. 嵌入式工具链管理
+
+运行命令 **Sakura Atelier: Embedded Tools...** 可查看并手动定位 PlatformIO Core、STM32CubeMX 6.x、STM32CubeCLT、Arm GNU Toolchain/GDB、CMake、Ninja、STM32CubeProgrammer 与 ST-LINK GDB Server。
+
+## 4. 构建、烧录、调试与 `.ioc` 查看
+
+- **PlatformIO**：自动读取 `platformio.ini` 中的 `[env:*]` 环境，支持构建、清理、上传、串口监视器、测试与调试（`platformio-debug`）；上传与设备上测试前需用户确认。
+- **STM32**：**构建（Build）**、**烧录（Flash）** 与 **调试（Debug）** 为三个独立命令。烧录前需明确确认固件、探针与目标芯片，仅执行编程与校验，不做整片擦除；调试通过 `cortex-debug` 发起。
+- **`.ioc` 专用视图**：双击 `.ioc` 文件默认打开 Sakura Atelier 摘要页（展示 MCU 型号与 CubeMX 状态），点击按钮后才启动 STM32CubeMX，远程（SSH/WSL/容器）窗口下自动禁用本机 GUI 启动并保留文本打开入口。
